@@ -155,6 +155,14 @@ This project is licensed under the MIT License.
 
 ## Screenshots
 
-## https://raw.githubusercontent.com/jchen577/class-chess-123/board.png
+https://raw.githubusercontent.com/jchen577/class-chess-123/main/board.png
+https://raw.githubusercontent.com/jchen577/class-chess-123/main/moves.png
+
+## Changes added
+
+Added a moves generator that is called
+Moves generator takes 0 arguments and is called when the player clicks on a piece and moves to another spot
+Checks all possible spots for each piece to move, and adds it to a list to be searched
+King moves are generated after calling a kingMoveGenerator() that searches for all the moves from enemy player that puts the current king in danger
 
 _This README is part of an educational project and is intended to serve as an example of good documentation practices._
