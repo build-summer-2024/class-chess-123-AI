@@ -21,8 +21,12 @@ bool ChessSquare::canDropBitAtPoint(Bit *newbit, const ImVec2 &point)
     //
     // xor the gametags to see if we have opposing colors
     //
-    if ((bit()->gameTag() ^ newbit->gameTag()) >= 128)
+    //std::cout<<bit()->gameTag()<<" "<<newbit->gameTag()<<std::endl;
+    /*if ((bit()->gameTag() ^ newbit->gameTag()) >= 128)
     {
+        return true;
+    }*/
+    if(bit()->getOwner()!=newbit->getOwner()){
         return true;
     }
     return false;

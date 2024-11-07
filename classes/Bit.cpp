@@ -1,4 +1,4 @@
-
+#include <cmath>
 #include "Bit.h"
 #include "BitHolder.h"
 

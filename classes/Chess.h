@@ -35,15 +35,19 @@ public:
     bool        canBitMoveFrom(Bit& bit, BitHolder& src) override;
     bool        canBitMoveFromTo(Bit& bit, BitHolder& src, BitHolder& dst) override;
     void        bitMovedFromTo(Bit &bit, BitHolder &src, BitHolder &dst) override;
+    void        setBoardPiece(BitHolder *holder,int pos,int posx,ChessPiece piece);
 
     void        stopGame() override;
-    BitHolder& getHolderAt(const int x, const int y) override { return _grid[y][x]; }
+    BitHolder& getHolderAt(const int x, const int y) override { return _grid[x][y]; }
 
 	void        updateAI() override;
     bool        gameHasAI() override { return true; }
 private:
     Bit *       PieceForPlayer(const int playerNumber, ChessPiece piece);
     const char  bitToPieceNotation(int row, int column) const;
+
+    std::vector<std::array<int,4>>       generateMoves();
+    std::vector<std::array<int,4>>       generateKingMoves(int playerNumber);
 
     ChessSquare      _grid[8][8];
 };

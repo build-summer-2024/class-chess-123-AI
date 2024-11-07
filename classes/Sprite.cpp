@@ -36,10 +36,15 @@ bool Sprite::LoadTextureFromFile(const char *filename)
             // try up one more directory
             snprintf(newFilename, sizeof(newFilename), "../../%s", filename);
             image_data = stbi_load(newFilename, &image_width, &image_height, NULL, 4);
-            if (image_data == NULL)
+             if (image_data == NULL)
             {
-                _size = ImVec2(0, 0);
-                return false;
+                snprintf(newFilename, sizeof(newFilename), "../../../%s", filename);
+                image_data = stbi_load(newFilename, &image_width, &image_height, NULL, 4);
+                if (image_data == NULL)
+                {
+                    _size = ImVec2(0, 0);
+                    return false;
+                }
             }
         }
     }

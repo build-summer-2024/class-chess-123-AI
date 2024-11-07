@@ -90,7 +90,7 @@ public:
 	virtual void stopGame() = 0;
 	virtual bool gameHasAI();
 	virtual void updateAI();
-	virtual void pieceTaken(Bit *bit){};
+	virtual void pieceTaken(Bit *bit){bit->getHolder()->setBit(nullptr);};
 
 	virtual std::string initialStateString() = 0;
 	virtual std::string stateString() = 0;

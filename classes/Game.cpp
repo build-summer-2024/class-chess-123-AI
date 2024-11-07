@@ -1,3 +1,4 @@
+#include <cmath>
 #include "Game.h"
 #include "Bit.h"
 #include "BitHolder.h"
@@ -129,24 +130,23 @@ void Game::scanForMouse()
 			if (bit && bit->isMouseOver(mousePos))
 			{
 				entity = bit;
+				if (ImGui::IsMouseClicked(0) && entity)
+				{
+					mouseDown(mousePos, entity);
+				} else if (ImGui::IsMouseReleased(0))
+				{
+					mouseUp(mousePos, entity);
+				}
+				else
+				{
+					mouseMoved(mousePos, entity);
+				}
 			}
 			else if (holder.isMouseOver(mousePos))
 			{
 				entity = &holder;
 			}
 		}
-	}
-	if (ImGui::IsMouseClicked(0))
-	{
-		mouseDown(mousePos, entity);
-	}
-	else if (ImGui::IsMouseReleased(0))
-	{
-		mouseUp(mousePos, entity);
-	}
-	else
-	{
-		mouseMoved(mousePos, entity);
 	}
 }
 
@@ -240,6 +240,7 @@ void Game::drawFrame()
 
 void Game::bitMovedFromTo(Bit &bit, BitHolder &src, BitHolder &dst)
 {
+	std::cout<<"working"<<std::endl;
 	endTurn();
 }
 
@@ -280,7 +281,6 @@ void Game::mouseDown(ImVec2 &location, Entity *entity)
 	{
 		_dragBit = (Bit *)entity;
 	}
-
 	if (!_dragBit)
 	{
 		if (entity && entity->getEntityType() == Entity::EntityBitHolder)
@@ -308,6 +308,10 @@ void Game::mouseDown(ImVec2 &location, Entity *entity)
 	_dragMoved = false;
 	_dropTarget = nullptr;
 	_oldHolder = _dragBit->getHolder();
+	if(_dragBit->getOwner()!=getCurrentPlayer()){
+		_dragBit = nullptr;
+		return;
+	}
 	// Ask holder's and game's permission before dragging:
 	if (_oldHolder)
 	{
@@ -376,6 +380,7 @@ void Game::mouseUp(ImVec2 &location, Entity *entity)
 	{
 		if (_dragMoved)
 		{
+			//std::cout<<_dropTarget<<std::endl;
 			// Update the drag tracking to the final mouse position:
 			mouseMoved(location, entity);
 			if (_dropTarget)
@@ -390,12 +395,14 @@ void Game::mouseUp(ImVec2 &location, Entity *entity)
 			}
 			// Is the move legal?
 			if (_dropTarget && _dropTarget->dropBitAtPoint(_dragBit, _dragBit->getPosition()))
+			//if (_dropTarget->dropBitAtPoint(_dragBit, _dragBit->getPosition()))
 			{
 				// Yes, notify the interested parties:
 				_dragBit->setPickedUp(false);
 				_dragBit->setPosition(_dropTarget->getPosition()); // don't animate
-				if (_oldHolder)
+				if (_oldHolder){
 					_oldHolder->draggedBitTo(_dragBit, _dropTarget);
+				}
 				bitMovedFromTo(*_dragBit, *_oldHolder, *_dropTarget);
 			}
 			else

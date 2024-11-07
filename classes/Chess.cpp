@@ -32,6 +32,48 @@ Bit* Chess::PieceForPlayer(const int playerNumber, ChessPiece piece)
 
 void Chess::setUpBoard()
 {
+    setNumberOfPlayers(2);//Set players to 2
+    _gameOptions.rowX = 8;
+    _gameOptions.rowY = 8;
+    //char piece[2];
+    //piece[1] = 0;
+    BitHolder theBit = BitHolder();
+    for (int i=0; i<_gameOptions.rowX; i++) {
+        for (int j=0; j<_gameOptions.rowY; j++) {
+            _grid[i][j].initHolder(ImVec2((float)(64*i + 100), (float)(64*j + 100)), "boardsquare.png", i, j);//Initalize the starting squares
+            /*_grid[i][j].setGameTag(0);
+            piece[0] = bitToPieceNotation(i,j);
+            _grid[i][j].setNotation(piece);*/
+            if((i == 0 && j == 0)||(i == 7 && j == 0)||(i == 7&&j==7)||(i==0&&j==7)){
+                setBoardPiece(&_grid[i][j],j,i,Rook);
+            }else if((i == 2 && j == 0)||(i == 5 && j == 0)||(i == 5&&j==7)||(i==2&&j==7)){
+                setBoardPiece(&_grid[i][j],j,i,Bishop);
+            }
+            else if((i == 1 && j == 0)||(i == 6 && j == 0)||(i == 6&&j==7)||(i==1&&j==7)){
+                setBoardPiece(&_grid[i][j],j,i,Knight);
+            }
+            else if((i == 3 && j == 0)||(i == 3 && j == 7)){
+                setBoardPiece(&_grid[i][j],j,i,Queen);
+            }
+            else if((i == 4 && j == 0)||(i == 4&& j == 7)){
+                setBoardPiece(&_grid[i][j],j,i,King);
+            }
+            else if(j == 1 || j == 6){
+                setBoardPiece(&_grid[i][j],j==1?0:1,i,Pawn);
+            }
+            
+        }
+    }
+    startGame();
+}
+
+void Chess::setBoardPiece(BitHolder *holder,int pos,int posx,ChessPiece piece){
+    Bit* newBit = PieceForPlayer(pos <=0 ? 1 : 0,piece);
+    newBit->setPosition(holder->getPosition());
+    newBit->setOwner(getPlayerAt(pos <=0 ? 1 : 0));
+    newBit->setParent(&_grid[posx][pos]);
+    newBit->setGameTag(piece+(pos <=0 ? 0 : 128));
+    holder->setBit(newBit);
 }
 
 //
@@ -45,16 +87,23 @@ bool Chess::actionForEmptyHolder(BitHolder &holder)
 bool Chess::canBitMoveFrom(Bit &bit, BitHolder &src)
 {
     // you can't move anything in tic tac toe
-    return false;
+    return true;
 }
 
 bool Chess::canBitMoveFromTo(Bit& bit, BitHolder& src, BitHolder& dst)
 {
+    auto possMoves = generateMoves();
+    for(int x = 0; x < possMoves.size();x++){
+        if(&dst == &(getHolderAt(possMoves[x][0],possMoves[x][1]))&& &src==&(getHolderAt(possMoves[x][2],possMoves[x][3]))){
+            return true;
+        }
+    }
+
     return false;
 }
 
 void Chess::bitMovedFromTo(Bit &bit, BitHolder &src, BitHolder &dst) {
-    
+    endTurn();
 }
 
 //
@@ -114,7 +163,7 @@ std::string Chess::stateString()
     std::string s;
     for (int y = 0; y < _gameOptions.rowY; y++) {
         for (int x = 0; x < _gameOptions.rowX; x++) {
-            s += bitToPieceNotation(y, x);
+            s += bitToPieceNotation(x, y);
         }
     }
     return s;
@@ -147,3 +196,215 @@ void Chess::updateAI()
 {
 }
 
+std::vector<std::array<int,4>> Chess::generateMoves(){
+    int directionOffesets[8][2] = {{0,-1},{0,1},{1,0},{-1,0},{1,-1},{-1,1},{-1,-1},{1,1}};//The possible transformations
+    std::vector<std::array<int,4>> moves;
+    int edges[8][8][8];
+    for (int y = 0; y < _gameOptions.rowY; y++) {
+        for (int x = 0; x < _gameOptions.rowX; x++) {
+            int numNorth = x;
+            int numSouth = 7-x;
+            int numWest = 7-y;
+            int numEast = y;
+            
+            edges[y][x][0] = numNorth;
+            edges[y][x][1] = numSouth;
+            edges[y][x][2] = numWest;
+            edges[y][x][3] = numEast;
+            edges[y][x][4] = std::min(numNorth,numWest);
+            edges[y][x][5] = std::min(numSouth,numEast);
+            edges[y][x][6] = std::min(numNorth,numEast);
+            edges[y][x][7] = std::min(numSouth,numWest);
+        }
+    }
+    for (int y = 0; y < _gameOptions.rowY; y++) {
+        for (int x = 0; x < _gameOptions.rowX; x++) {
+            ChessSquare *piece = &_grid[y][x];//Get current piece
+            //std::cout<<piece->bit()<<" gridPiece: " <<_grid[y][x].bit()<<std::endl;
+            if(piece->bit()&&piece->bit()->getOwner()==getCurrentPlayer()){//If piece is owned by current player, otherwise we don't care
+                if(piece->bit()->gameTag()==King||piece->bit()->gameTag()==King+128){
+                    auto notPoss = generateKingMoves(getPlayerAt(0)==getCurrentPlayer()?1:0);
+                    for(int i = 0;i<8;i++){
+                        bool poss = true;
+                        if(y+directionOffesets[i][0]>=0&&y+directionOffesets[i][0]<8&&x+directionOffesets[i][1]<8&&x+directionOffesets[i][8]>=0)
+                        for(int j =0; j < notPoss.size();j++){
+                            //std::cout<<notPoss[j][2]<<" "<<notPoss[j][3]<<std::endl;
+                            if(_grid[notPoss[j][2]][notPoss[j][3]].bit()->getOwner()!=getCurrentPlayer()&&notPoss[j][0]==y+directionOffesets[i][0]&&notPoss[j][1]==x+directionOffesets[i][1]){
+                                //std::cout<<"working"<<std::endl;
+                                poss = false;
+                            }
+                        }
+                        if(poss){
+                            moves.push_back({y+directionOffesets[i][0],x+directionOffesets[i][1],y,x});
+                        }
+                    }
+                }
+                if(piece->bit()->gameTag()==Pawn||piece->bit()->gameTag()==Pawn+128){
+                    //std::cout<<y<<" "<<x<<" slots"<<std::endl;
+                    if(piece->bit()->gameTag()==Pawn+128){
+                        if(x-1>=0){
+                            if(x==6){
+                                moves.push_back({y,x-2,y,x});
+                            }
+                            if(!_grid[y][x-1].bit()){
+                                moves.push_back({y,x-1,y,x});
+                            }
+                            if(y-1>=0&&_grid[y-1][x-1].bit()&&_grid[y-1][x-1].bit()->getOwner()!=getCurrentPlayer()){
+                                moves.push_back({y-1,x-1,y,x});
+                            }
+                            if(y+1<8&&_grid[y+1][x-1].bit()&&_grid[y+1][x-1].bit()->getOwner()!=getCurrentPlayer()){
+                                moves.push_back({y+1,x-1,y,x});
+                            }
+                        }
+                    }else{
+                        if(x+1<8){
+                            if(x==1){
+                                moves.push_back({y,x+2,y,x});
+                            }
+                            if(!_grid[y][x+1].bit()){
+                                moves.push_back({y,x+1,y,x});
+                            }
+                            if(y-1>=0&&_grid[y-1][x+1].bit()&&_grid[y-1][x+1].bit()->getOwner()!=getCurrentPlayer()){
+                                moves.push_back({y-1,x+1,y,x});
+                            }
+                            if(y+1<8&&_grid[y+1][x+1].bit()&&_grid[y+1][x+1].bit()->getOwner()!=getCurrentPlayer()){
+                                moves.push_back({y+1,x+1,y,x});
+                            }
+                        }
+                    }
+                }
+                if(piece->bit()->gameTag()==Knight||piece->bit()->gameTag()==Knight+128){
+                    int KnMoves[8][2] = {{-2,1},{-2,-1},{2,1},{2,-1,},{1,-2},{1,2},{-1,2},{-1,-2}};
+                    for(int i = 0; i < 8;i++){
+                        if(y+KnMoves[i][0]>=0&&y+KnMoves[i][0]<8&&x+KnMoves[i][1]>=0&&x+KnMoves[i][1]<8&&(!_grid[y+KnMoves[i][0]][x+KnMoves[i][1]].bit()||_grid[y+KnMoves[i][0]][x+KnMoves[i][1]].bit()->getOwner()!=getCurrentPlayer())){
+                            moves.push_back({y+KnMoves[i][0],x+KnMoves[i][1],y,x});
+                        }
+                    }
+                }
+                int start = 0;
+                int end = 8;
+                if(piece->bit()->gameTag()==Bishop||piece->bit()->gameTag()==Bishop+128){
+                    start = 4;
+
+                }
+                else if(piece->bit()->gameTag()==Rook || piece->bit()->gameTag()==Rook+128){
+                    end = 4;
+                }
+                if(piece->bit()->gameTag()==Rook || piece->bit()->gameTag()==Rook+128||piece->bit()->gameTag()==Bishop||piece->bit()->gameTag()==Bishop+128||piece->bit()->gameTag()==Queen+128||piece->bit()->gameTag()==Queen){
+                    for(int i = start; i< end;i++){
+                        for(int n = 0; n<edges[y][x][i];n++){
+                            int targetSquare[2] = {(y+(directionOffesets[i][0]*(n+1))),(x+(directionOffesets[i][1]*(n+1)))};
+                            ChessSquare *pieceOnSquare = &_grid[targetSquare[0]][targetSquare[1]];
+                            //std::cout<<targetSquare[0]<<" "<<targetSquare[1]<<" Target square "<<directionOffesets[i][0]<<" "<< directionOffesets[i][1]<<" offset "<<i <<" i "<<n<<"n "<<y<<" "<<x<<" startSquares "<<edges[y][x][i]<<" edges"<<std::endl;
+                            if(pieceOnSquare->bit()&&pieceOnSquare->bit()->getOwner()==getCurrentPlayer()){
+                                break;
+                            }
+                            moves.push_back({targetSquare[0],targetSquare[1],y,x});
+                            if(pieceOnSquare->bit()&&pieceOnSquare->bit()->getOwner()!= getCurrentPlayer()){
+                                break;
+                            }
+                    }
+                }
+            }
+            }
+        }
+    }
+
+    return moves;
+}
+
+std::vector<std::array<int,4>> Chess::generateKingMoves(int playerNumber){
+   int directionOffesets[8][2] = {{0,-1},{0,1},{1,0},{-1,0},{1,-1},{-1,1},{-1,-1},{1,1}};//The possible transformations
+    std::vector<std::array<int,4>> moves;
+    int edges[8][8][8];
+    for (int y = 0; y < _gameOptions.rowY; y++) {
+        for (int x = 0; x < _gameOptions.rowX; x++) {
+            int numNorth = x;
+            int numSouth = 7-x;
+            int numWest = 7-y;
+            int numEast = y;
+            
+            edges[y][x][0] = numNorth;
+            edges[y][x][1] = numSouth;
+            edges[y][x][2] = numWest;
+            edges[y][x][3] = numEast;
+            edges[y][x][4] = std::min(numNorth,numWest);
+            edges[y][x][5] = std::min(numSouth,numEast);
+            edges[y][x][6] = std::min(numNorth,numEast);
+            edges[y][x][7] = std::min(numSouth,numWest);
+        }
+    }
+    for (int y = 0; y < _gameOptions.rowY; y++) {
+        for (int x = 0; x < _gameOptions.rowX; x++) {
+            ChessSquare *piece = &_grid[y][x];//Get current piece
+            //std::cout<<piece->bit()<<" gridPiece: " <<_grid[y][x].bit()<<std::endl;
+            if(piece->bit()&&piece->bit()->getOwner()==getPlayerAt(playerNumber)){//If piece is owned by current player, otherwise we don't care
+                
+                if(piece->bit()->gameTag()==Pawn||piece->bit()->gameTag()==Pawn+128){
+                    //std::cout<<y<<" "<<x<<" slots"<<std::endl;
+                    if(piece->bit()->gameTag()==Pawn+128){
+                        if(x-1>=0){
+                            
+                            if(y-1>=0){
+                                //std::cout<<"working"<<std::endl;
+                                moves.push_back({y-1,x-1,y,x});
+                            }
+                            if(y+1<8){
+                                //std::cout<<"working"<<std::endl;
+                                moves.push_back({y+1,x-1,y,x});
+                            }
+                        }
+                    }else{
+                        if(x+1<8){
+                            
+                            if(y-1>=0){
+                                //std::cout<<"working"<<std::endl;
+                                moves.push_back({y-1,x+1,y,x});
+                            }
+                            if(y+1<8){
+                                //std::cout<<"working"<<std::endl;
+                                moves.push_back({y+1,x+1,y,x});
+                            }
+                        }
+                    }
+                }
+                if(piece->bit()->gameTag()==Knight||piece->bit()->gameTag()==Knight+128){
+                    int KnMoves[8][2] = {{-2,1},{-2,-1},{2,1},{2,-1,},{1,-2},{1,2},{-1,2},{-1,-2}};
+                    for(int i = 0; i < 8;i++){
+                        if(y+KnMoves[i][0]>=0&&y+KnMoves[i][0]<8&&x+KnMoves[i][1]>=0&&x+KnMoves[i][1]<8&&(!_grid[y+KnMoves[i][0]][x+KnMoves[i][1]].bit()||_grid[y+KnMoves[i][0]][x+KnMoves[i][1]].bit()->getOwner()!=getPlayerAt(playerNumber))){
+                            //std::cout<<"working"<<std::endl;
+                            moves.push_back({y+KnMoves[i][0],x+KnMoves[i][1],y,x});
+                        }
+                    }
+                }
+                int start = 0;
+                int end = 8;
+                if(piece->bit()->gameTag()==Bishop||piece->bit()->gameTag()==Bishop+128){
+                    start = 4;
+
+                }
+                else if(piece->bit()->gameTag()==Rook || piece->bit()->gameTag()==Rook+128){
+                    end = 4;
+                }
+                if(piece->bit()->gameTag()==Rook || piece->bit()->gameTag()==Rook+128||piece->bit()->gameTag()==Bishop||piece->bit()->gameTag()==Bishop+128||piece->bit()->gameTag()==Queen+128||piece->bit()->gameTag()==Queen){
+                    for(int i = start; i< end;i++){
+                        for(int n = 0; n<edges[y][x][i];n++){
+                            int targetSquare[2] = {(y+(directionOffesets[i][0]*(n+1))),(x+(directionOffesets[i][1]*(n+1)))};
+                            ChessSquare *pieceOnSquare = &_grid[targetSquare[0]][targetSquare[1]];
+                            //std::cout<<targetSquare[0]<<" "<<targetSquare[1]<<" Target square "<<directionOffesets[i][0]<<" "<< directionOffesets[i][1]<<" offset "<<i <<" i "<<n<<"n "<<y<<" "<<x<<" startSquares "<<edges[y][x][i]<<" edges"<<std::endl;
+                            if(pieceOnSquare->bit()&&pieceOnSquare->bit()->getOwner()==getPlayerAt(playerNumber)){
+                                break;
+                            }
+                            moves.push_back({targetSquare[0],targetSquare[1],y,x});
+                            if(pieceOnSquare->bit()&&pieceOnSquare->bit()->getOwner()!= getPlayerAt(playerNumber)){
+                                break;
+                            }
+                    }
+                }
+            }
+            }
+        }
+    }
+
+    return moves;
+}
