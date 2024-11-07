@@ -155,8 +155,8 @@ This project is licensed under the MIT License.
 
 ## Screenshots
 
-https://raw.githubusercontent.com/jchen577/class-chess-123/main/board.png
-https://raw.githubusercontent.com/jchen577/class-chess-123/main/moves.png
+[Complete Board](https://raw.githubusercontent.com/jchen577/class-chess-123/main/board.png)
+[Moves](https://raw.githubusercontent.com/jchen577/class-chess-123/main/moves.png)
 
 ## Changes added
 

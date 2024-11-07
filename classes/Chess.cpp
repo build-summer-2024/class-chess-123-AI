@@ -65,8 +65,6 @@ void Chess::setUpBoard()
         }
     }
     startGame();
-    auto moves = generateMoves();
-    std::cout<<moves.size()<<" starting array size"<<std::endl;
 }
 
 void Chess::setBoardPiece(BitHolder *holder,int pos,int posx,ChessPiece piece){
@@ -95,9 +93,6 @@ bool Chess::canBitMoveFrom(Bit &bit, BitHolder &src)
 bool Chess::canBitMoveFromTo(Bit& bit, BitHolder& src, BitHolder& dst)
 {
     auto possMoves = generateMoves();
-    if(possMoves.size()==0){
-        stopGame();
-    }
     for(int x = 0; x < possMoves.size();x++){
         if(&dst == &(getHolderAt(possMoves[x][0],possMoves[x][1]))&& &src==&(getHolderAt(possMoves[x][2],possMoves[x][3]))){
             return true;
