@@ -65,6 +65,8 @@ void Chess::setUpBoard()
         }
     }
     startGame();
+    auto moves = generateMoves();
+    std::cout<<moves.size()<<" starting array size"<<std::endl;
 }
 
 void Chess::setBoardPiece(BitHolder *holder,int pos,int posx,ChessPiece piece){
@@ -226,7 +228,7 @@ std::vector<std::array<int,4>> Chess::generateMoves(){
                     auto notPoss = generateKingMoves(getPlayerAt(0)==getCurrentPlayer()?1:0);
                     for(int i = 0;i<8;i++){
                         bool poss = true;
-                        if(y+directionOffesets[i][0]>=0&&y+directionOffesets[i][0]<8&&x+directionOffesets[i][1]<8&&x+directionOffesets[i][8]>=0)
+                        if(y+directionOffesets[i][0]>=0&&y+directionOffesets[i][0]<8&&x+directionOffesets[i][1]<8&&x+directionOffesets[i][8]>=0){
                         for(int j =0; j < notPoss.size();j++){
                             //std::cout<<notPoss[j][2]<<" "<<notPoss[j][3]<<std::endl;
                             if(_grid[notPoss[j][2]][notPoss[j][3]].bit()->getOwner()!=getCurrentPlayer()&&notPoss[j][0]==y+directionOffesets[i][0]&&notPoss[j][1]==x+directionOffesets[i][1]){
@@ -235,7 +237,10 @@ std::vector<std::array<int,4>> Chess::generateMoves(){
                             }
                         }
                         if(poss){
-                            moves.push_back({y+directionOffesets[i][0],x+directionOffesets[i][1],y,x});
+                            if(_grid[y+directionOffesets[i][0]][x+directionOffesets[i][1]].bit()&&_grid[y+directionOffesets[i][0]][x+directionOffesets[i][1]].bit()->getOwner()!=getCurrentPlayer()){
+                                moves.push_back({y+directionOffesets[i][0],x+directionOffesets[i][1],y,x});
+                            }
+                        }
                         }
                     }
                 }
