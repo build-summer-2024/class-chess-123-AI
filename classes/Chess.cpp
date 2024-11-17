@@ -30,6 +30,48 @@ Bit* Chess::PieceForPlayer(const int playerNumber, ChessPiece piece)
     return bit;
 }
 
+void Chess::FENtoBoard(std::string FEN){
+    int posI = 0;
+    int posJ = 0;
+    std::unordered_map<char, std::pair<int, int>> pieceMap = {
+        {'r', {Rook, 0}}, {'R', {Rook, 128}},
+        {'p', {Pawn, 0}}, {'P', {Pawn, 128}},
+        {'q', {Queen, 0}}, {'Q', {Queen, 128}},
+        {'n', {Knight, 0}}, {'N', {Knight, 128}},
+        {'k', {King, 0}}, {'K', {King, 128}},
+        {'b', {Bishop, 0}}, {'B', {Bishop, 128}},
+    };
+    for (char& i : FEN) {
+        std::cout<<posI<<" "<<posJ<<" "<<i<<std::endl;
+        if(i == '/'){
+            continue;
+        }
+        if((int(i)-48) <8){
+            posI +=int(i)-48;
+            if(posI==8){
+                posI = 0;
+                posJ++;
+            }
+            continue;
+        }else if((int(i)-48) ==8){
+            posI = 0;
+            posJ++;
+            continue;
+        }
+        if (pieceMap.count(i)) {
+            auto [pieceType, color] = pieceMap[i];
+            setBoardPiece(&_grid[posI][posJ], static_cast<ChessPiece>(pieceType), color, posI, posJ);
+        }
+        if(posI == 7){
+            posI = 0;
+            posJ++;
+        }
+        else{
+            posI++;
+        }
+    }
+}
+
 void Chess::setUpBoard()
 {
     setNumberOfPlayers(2);//Set players to 2
@@ -40,39 +82,19 @@ void Chess::setUpBoard()
     BitHolder theBit = BitHolder();
     for (int i=0; i<_gameOptions.rowX; i++) {
         for (int j=0; j<_gameOptions.rowY; j++) {
-            _grid[i][j].initHolder(ImVec2((float)(64*i + 100), (float)(64*j + 100)), "boardsquare.png", i, j);//Initalize the starting squares
-            /*_grid[i][j].setGameTag(0);
-            piece[0] = bitToPieceNotation(i,j);
-            _grid[i][j].setNotation(piece);*/
-            if((i == 0 && j == 0)||(i == 7 && j == 0)||(i == 7&&j==7)||(i==0&&j==7)){
-                setBoardPiece(&_grid[i][j],j,i,Rook);
-            }else if((i == 2 && j == 0)||(i == 5 && j == 0)||(i == 5&&j==7)||(i==2&&j==7)){
-                setBoardPiece(&_grid[i][j],j,i,Bishop);
-            }
-            else if((i == 1 && j == 0)||(i == 6 && j == 0)||(i == 6&&j==7)||(i==1&&j==7)){
-                setBoardPiece(&_grid[i][j],j,i,Knight);
-            }
-            else if((i == 3 && j == 0)||(i == 3 && j == 7)){
-                setBoardPiece(&_grid[i][j],j,i,Queen);
-            }
-            else if((i == 4 && j == 0)||(i == 4&& j == 7)){
-                setBoardPiece(&_grid[i][j],j,i,King);
-            }
-            else if(j == 1 || j == 6){
-                setBoardPiece(&_grid[i][j],j==1?0:1,i,Pawn);
-            }
-            
+            _grid[i][j].initHolder(ImVec2((float)(64*i + 100), (float)(64*j + 100)), "boardsquare.png", i, j);//Initalize the starting squares 
         }
     }
+    FENtoBoard("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
     startGame();
 }
 
-void Chess::setBoardPiece(BitHolder *holder,int pos,int posx,ChessPiece piece){
-    Bit* newBit = PieceForPlayer(pos <=0 ? 1 : 0,piece);
+void Chess::setBoardPiece(BitHolder *holder,ChessPiece piece,int color,int posI, int posJ){
+    Bit* newBit = PieceForPlayer(color ==0 ? 1 : 0,piece);
     newBit->setPosition(holder->getPosition());
-    newBit->setOwner(getPlayerAt(pos <=0 ? 1 : 0));
-    newBit->setParent(&_grid[posx][pos]);
-    newBit->setGameTag(piece+(pos <=0 ? 0 : 128));
+    newBit->setOwner(getPlayerAt(color ==0 ? 1: 0));
+    newBit->setParent(&_grid[posI][posJ]);
+    newBit->setGameTag(piece+color);
     holder->setBit(newBit);
 }
 
@@ -226,7 +248,7 @@ std::vector<std::array<int,4>> Chess::generateMoves(){
                     auto notPoss = generateKingMoves(getPlayerAt(0)==getCurrentPlayer()?1:0);
                     for(int i = 0;i<8;i++){
                         bool poss = true;
-                        if(y+directionOffesets[i][0]>=0&&y+directionOffesets[i][0]<8&&x+directionOffesets[i][1]<8&&x+directionOffesets[i][8]>=0){
+                        if(y+directionOffesets[i][0]>=0&&y+directionOffesets[i][0]<8&&x+directionOffesets[i][1]<8&&x+directionOffesets[i][8]>=0)
                         for(int j =0; j < notPoss.size();j++){
                             //std::cout<<notPoss[j][2]<<" "<<notPoss[j][3]<<std::endl;
                             if(_grid[notPoss[j][2]][notPoss[j][3]].bit()->getOwner()!=getCurrentPlayer()&&notPoss[j][0]==y+directionOffesets[i][0]&&notPoss[j][1]==x+directionOffesets[i][1]){
@@ -235,10 +257,7 @@ std::vector<std::array<int,4>> Chess::generateMoves(){
                             }
                         }
                         if(poss){
-                            if(_grid[y+directionOffesets[i][0]][x+directionOffesets[i][1]].bit()&&_grid[y+directionOffesets[i][0]][x+directionOffesets[i][1]].bit()->getOwner()!=getCurrentPlayer()){
-                                moves.push_back({y+directionOffesets[i][0],x+directionOffesets[i][1],y,x});
-                            }
-                        }
+                            moves.push_back({y+directionOffesets[i][0],x+directionOffesets[i][1],y,x});
                         }
                     }
                 }

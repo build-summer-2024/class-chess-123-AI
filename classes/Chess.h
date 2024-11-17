@@ -30,12 +30,13 @@ public:
     bool        checkForDraw() override;
     std::string initialStateString() override;
     std::string stateString() override;
+    void FENtoBoard(std::string FEN);
     void        setStateString(const std::string &s) override;
     bool        actionForEmptyHolder(BitHolder& holder) override;
     bool        canBitMoveFrom(Bit& bit, BitHolder& src) override;
     bool        canBitMoveFromTo(Bit& bit, BitHolder& src, BitHolder& dst) override;
     void        bitMovedFromTo(Bit &bit, BitHolder &src, BitHolder &dst) override;
-    void        setBoardPiece(BitHolder *holder,int pos,int posx,ChessPiece piece);
+    void        setBoardPiece(BitHolder *holder,ChessPiece piece,int color,int posI, int posJ);
 
     void        stopGame() override;
     BitHolder& getHolderAt(const int x, const int y) override { return _grid[x][y]; }
