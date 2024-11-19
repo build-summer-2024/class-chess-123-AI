@@ -29,6 +29,9 @@ public:
 		_gameTag = 0;
 		_entityType = EntityBit;
 		_moving = false;
+		hasMoved = false;
+		castleR = false;
+		castleL = false;
 	};
 
 	~Bit();
@@ -53,8 +56,14 @@ public:
 	void update();
 	void setOpacity(float opacity){};
 	bool getMoving() { return _moving; };
+	bool getMoved(){return hasMoved;};
+	bool getCastleL(){return castleL;};
+	bool getCastleR(){return castleR;};
+	void setMoved(bool tf){hasMoved=tf;};
+	void setCastleL(bool tf){castleL=tf;};
+	void setCastleR(bool tf){castleR=tf;};
 
-private:
+	private:
 	int _restingZ;
 	float _restingTransform;
 	bool _pickedUp;
@@ -63,4 +72,7 @@ private:
 	ImVec2 _destinationPosition;
 	ImVec2 _destinationStep;
 	bool _moving;
+	bool hasMoved;
+	bool castleR;
+	bool castleL;
 };

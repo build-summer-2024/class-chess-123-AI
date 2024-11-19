@@ -42,7 +42,6 @@ void Chess::FENtoBoard(std::string FEN){
         {'b', {Bishop, 0}}, {'B', {Bishop, 128}},
     };
     for (char& i : FEN) {
-        std::cout<<posI<<" "<<posJ<<" "<<i<<std::endl;
         if(i == '/'){
             continue;
         }
@@ -114,6 +113,27 @@ bool Chess::canBitMoveFrom(Bit &bit, BitHolder &src)
 
 bool Chess::canBitMoveFromTo(Bit& bit, BitHolder& src, BitHolder& dst)
 {
+
+    if(src.bit()&&src.bit()->gameTag()==King&&dst.bit()&&dst.bit()->gameTag()==Rook&&!bit.getMoved()&&!dst.bit()->getMoved()){
+        if(_grid[7][0].bit()&&!_grid[5][0].bit()&&!_grid[6][0].bit()){
+            bit.setCastleR(true);
+            return true;
+        }
+        else if(_grid[0][0].bit()&&!_grid[1][0].bit()&&!_grid[2][0].bit()){
+            bit.setCastleL(true);
+            return true;
+        }
+    }
+    if(src.bit()&&src.bit()->gameTag()==King+128&&dst.bit()&&dst.bit()->gameTag()==Rook+128&&!bit.getMoved()&&!dst.bit()->getMoved()){
+        if(_grid[7][7].bit()&&!_grid[5][7].bit()&&!_grid[6][7].bit()){
+            bit.setCastleR(true);
+            return true;
+        }
+        else if(_grid[0][7].bit()&&!_grid[1][7].bit()&&!_grid[2][7].bit()){
+            bit.setCastleL(true);
+            return true;
+        }
+    }
     auto possMoves = generateMoves();
     for(int x = 0; x < possMoves.size();x++){
         if(&dst == &(getHolderAt(possMoves[x][0],possMoves[x][1]))&& &src==&(getHolderAt(possMoves[x][2],possMoves[x][3]))){
@@ -125,6 +145,40 @@ bool Chess::canBitMoveFromTo(Bit& bit, BitHolder& src, BitHolder& dst)
 }
 
 void Chess::bitMovedFromTo(Bit &bit, BitHolder &src, BitHolder &dst) {
+    BitHolder *currHolder = bit.getHolder();
+    if(bit.getCastleR()&&currHolder->bit()->gameTag()==King){
+        //_grid[6][0].setBit(&bit);
+        dst.destroyBit();
+        currHolder->destroyBit();
+        setBoardPiece(&_grid[6][0],King,0,6,0);
+        _grid[1][7].bit()->setMoved(true);
+        setBoardPiece(&_grid[5][0],Rook,0,5,0);
+    }
+    else if(bit.getCastleL()&&currHolder->bit()->gameTag()==King){
+        //_grid[1][0].setBit(&bit);
+        dst.destroyBit();
+        currHolder->destroyBit();
+        setBoardPiece(&_grid[1][0],King,0,1,0);
+        _grid[1][7].bit()->setMoved(true);
+        setBoardPiece(&_grid[2][0],Rook,0,2,0);
+    }
+    else if(bit.getCastleR()&&currHolder->bit()->gameTag()==King+128){
+        //_grid[6][7].setBit(&bit);
+        dst.destroyBit();
+        currHolder->destroyBit();
+        setBoardPiece(&_grid[6][7],King,128,6,7);
+        _grid[1][7].bit()->setMoved(true);
+        setBoardPiece(&_grid[5][7],Rook,128,5,7);
+    }
+    else if(bit.getCastleL()&&currHolder->bit()->gameTag()==King+128){
+        dst.destroyBit();
+        setBoardPiece(&_grid[2][7],King,128,2,7);
+        _grid[1][7].bit()->setMoved(true);
+        setBoardPiece(&_grid[3][7],Rook,128,3,7);
+        currHolder->destroyBit();
+        //_grid[1][7].setBit(&bit);
+    }
+    bit.setMoved(true);
     endTurn();
 }
 
@@ -256,6 +310,9 @@ std::vector<std::array<int,4>> Chess::generateMoves(){
                                 poss = false;
                             }
                         }
+                        if(_grid[y+directionOffesets[i][0]][x+directionOffesets[i][1]].bit()&&_grid[y+directionOffesets[i][0]][x+directionOffesets[i][1]].bit()->getOwner()==getCurrentPlayer()){
+                            poss = false;
+                        }
                         if(poss){
                             moves.push_back({y+directionOffesets[i][0],x+directionOffesets[i][1],y,x});
                         }
@@ -263,37 +320,7 @@ std::vector<std::array<int,4>> Chess::generateMoves(){
                 }
                 if(piece->bit()->gameTag()==Pawn||piece->bit()->gameTag()==Pawn+128){
                     //std::cout<<y<<" "<<x<<" slots"<<std::endl;
-                    if(piece->bit()->gameTag()==Pawn+128){
-                        if(x-1>=0){
-                            if(x==6){
-                                moves.push_back({y,x-2,y,x});
-                            }
-                            if(!_grid[y][x-1].bit()){
-                                moves.push_back({y,x-1,y,x});
-                            }
-                            if(y-1>=0&&_grid[y-1][x-1].bit()&&_grid[y-1][x-1].bit()->getOwner()!=getCurrentPlayer()){
-                                moves.push_back({y-1,x-1,y,x});
-                            }
-                            if(y+1<8&&_grid[y+1][x-1].bit()&&_grid[y+1][x-1].bit()->getOwner()!=getCurrentPlayer()){
-                                moves.push_back({y+1,x-1,y,x});
-                            }
-                        }
-                    }else{
-                        if(x+1<8){
-                            if(x==1){
-                                moves.push_back({y,x+2,y,x});
-                            }
-                            if(!_grid[y][x+1].bit()){
-                                moves.push_back({y,x+1,y,x});
-                            }
-                            if(y-1>=0&&_grid[y-1][x+1].bit()&&_grid[y-1][x+1].bit()->getOwner()!=getCurrentPlayer()){
-                                moves.push_back({y-1,x+1,y,x});
-                            }
-                            if(y+1<8&&_grid[y+1][x+1].bit()&&_grid[y+1][x+1].bit()->getOwner()!=getCurrentPlayer()){
-                                moves.push_back({y+1,x+1,y,x});
-                            }
-                        }
-                    }
+                    returnPawnMoves(y,x,moves,piece->bit()->gameTag()==Pawn?Pawn:Pawn+128);
                 }
                 if(piece->bit()->gameTag()==Knight||piece->bit()->gameTag()==Knight+128){
                     int KnMoves[8][2] = {{-2,1},{-2,-1},{2,1},{2,-1,},{1,-2},{1,2},{-1,2},{-1,-2}};
@@ -429,4 +456,39 @@ std::vector<std::array<int,4>> Chess::generateKingMoves(int playerNumber){
     }
 
     return moves;
+}
+
+void Chess::returnPawnMoves(int positionY, int positionX, std::vector<std::array<int,4>> &moves, int color){
+    //ChessSquare *piece = &_grid[positionY][positionX];
+    if(color == Pawn+128){
+        if(positionX-1>=0){
+            if(positionX==6){
+                moves.push_back({positionY,positionX-2,positionY,positionX});
+            }
+            if(!_grid[positionY][positionX-1].bit()){
+                moves.push_back({positionY,positionX-1,positionY,positionX});
+            }
+            if(positionY-1>=0&&_grid[positionY-1][positionX-1].bit()&&_grid[positionY-1][positionX-1].bit()->getOwner()!=getCurrentPlayer()){
+                moves.push_back({positionY-1,positionX-1,positionY,positionX});
+            }
+            if(positionY+1<8&&_grid[positionY+1][positionX-1].bit()&&_grid[positionY+1][positionX-1].bit()->getOwner()!=getCurrentPlayer()){
+                moves.push_back({positionY+1,positionX-1,positionY,positionX});
+            }
+        }
+    }else{
+        if(positionX+1<8){
+            if(positionX==1){
+                moves.push_back({positionY,positionX+2,positionY,positionX});
+            }
+            if(!_grid[positionY][positionX+1].bit()){
+                moves.push_back({positionY,positionX+1,positionY,positionX});
+            }
+            if(positionY-1>=0&&_grid[positionY-1][positionX+1].bit()&&_grid[positionY-1][positionX+1].bit()->getOwner()!=getCurrentPlayer()){
+                moves.push_back({positionY-1,positionX+1,positionY,positionX});
+            }
+            if(positionY+1<8&&_grid[positionY+1][positionX+1].bit()&&_grid[positionY+1][positionX+1].bit()->getOwner()!=getCurrentPlayer()){
+                moves.push_back({positionY+1,positionX+1,positionY,positionX});
+            }
+        }
+    }
 }
