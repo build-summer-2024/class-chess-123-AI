@@ -44,12 +44,17 @@ public:
 	void        updateAI() override;
     bool        gameHasAI() override { return true; }
 private:
+    bool enpassant = false;
+    bool enpassantF = false;
+    Bit* lastBitWhite;
+    Bit* lastBitBlack;
     Bit *       PieceForPlayer(const int playerNumber, ChessPiece piece);
     const char  bitToPieceNotation(int row, int column) const;
 
     std::vector<std::array<int,4>>       generateMoves();
     std::vector<std::array<int,4>>       generateKingMoves(int playerNumber);
     void returnPawnMoves(int positionY, int positionX, std::vector<std::array<int,4>> &moves, int color);
+    bool kingChecked(int color);
 
     ChessSquare      _grid[8][8];
 };

@@ -32,6 +32,7 @@ public:
 		hasMoved = false;
 		castleR = false;
 		castleL = false;
+		pawn2step = false;
 	};
 
 	~Bit();
@@ -62,6 +63,8 @@ public:
 	void setMoved(bool tf){hasMoved=tf;};
 	void setCastleL(bool tf){castleL=tf;};
 	void setCastleR(bool tf){castleR=tf;};
+	void setPawn(bool tf){pawn2step=tf;};
+	bool getPawn(){return pawn2step;};
 
 	private:
 	int _restingZ;
@@ -75,4 +78,6 @@ public:
 	bool hasMoved;
 	bool castleR;
 	bool castleL;
+	bool firstMove;
+	bool pawn2step;
 };
