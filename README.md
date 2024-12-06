@@ -160,9 +160,14 @@ This project is licensed under the MIT License.
 
 ## Changes added
 
-Added a moves generator that is called
-Moves generator takes 0 arguments and is called when the player clicks on a piece and moves to another spot
-Checks all possible spots for each piece to move, and adds it to a list to be searched
-King moves are generated after calling a kingMoveGenerator() that searches for all the moves from enemy player that puts the current king in danger
+### Added a moves generator that is called
+### Moves generator takes 0 arguments and is called when the player clicks on a piece and moves to another spot
+### Checks all possible spots for each piece to move, and adds it to a list to be searched
+### King moves are generated after calling a kingMoveGenerator() that searches for all the moves from enemy player that puts the current king in danger
+
+## FEN, Castling, and EnPassant
+### Added code that reads a FEN string in setupBoard(). Reads the string and places pieces accordingly
+### Castling added by adding new booleans to bits to see if they have moved yet. If the king hovers over and open rook, then spawn new piece and delete the old piece
+### EnPassant added by adding new bit holders and booleans in chess.h. It checks which direction the enpassant is going, and if the pawn that is being eaten had just last moved and did a 2 move jump
 
 _This README is part of an educational project and is intended to serve as an example of good documentation practices._
