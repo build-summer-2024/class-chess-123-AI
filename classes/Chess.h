@@ -54,7 +54,7 @@ private:
     std::vector<std::array<int,4>>       generateMoves();
     std::vector<std::array<int,4>>       generateKingMoves(int playerNumber);
     void returnPawnMoves(int positionY, int positionX, std::vector<std::array<int,4>> &moves, int color);
-    bool kingChecked(int color);
+    std::vector<std::array<int,4>> kingChecked(int color);
 
     ChessSquare      _grid[8][8];
 };

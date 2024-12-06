@@ -113,6 +113,94 @@ bool Chess::canBitMoveFrom(Bit &bit, BitHolder &src)
 
 bool Chess::canBitMoveFromTo(Bit& bit, BitHolder& src, BitHolder& dst)
 {
+    std::vector<std::array<int,4>> possMovesToBlock = kingChecked(getPlayerAt(0)==getCurrentPlayer()?128:0);
+    if(possMovesToBlock.size()>0){
+        int directionOffesets[8][2] = {{0,-1},{0,1},{1,0},{-1,0},{1,-1},{-1,1},{-1,-1},{1,1}};
+        std::vector<std::array<int,4>> threatMoves = generateKingMoves(getCurrentPlayer()==0?1:0);
+        int kingPos[] = {0,0};
+        int color = getCurrentPlayer()==0?128:0;
+        if(bit.gameTag()==King+color){
+            for(int i =0;i<8;i++){
+                for(int j = 0; j <8;j++){//Find the king's current position
+                    if(_grid[i][j].bit()&&_grid[i][j].bit()->gameTag()==King+color){
+                        kingPos[0]=i;
+                        kingPos[1]=j;
+                        break;
+                    }
+                }
+            }   
+            for(int k =0;k<8;k++){//If the king move is legal, move
+                if(kingPos[0]+directionOffesets[k][0]>=0&&kingPos[0]+directionOffesets[k][1]<8&&kingPos[1]+directionOffesets[k][1]>=0&&kingPos[1]+directionOffesets[k][1]<8){
+                    for(int m=0;m<threatMoves.size();m++){
+                        if(threatMoves[m][0]==kingPos[0]+directionOffesets[k][0]&&threatMoves[m][1]==kingPos[1]+directionOffesets[k][1]&&&getHolderAt(kingPos[0]+directionOffesets[k][0],kingPos[1]+directionOffesets[k][1])==&dst){
+                            return false;
+                        }
+                    }
+                    if(dst.bit()&&dst.bit()->getOwner()==getCurrentPlayer()){
+                        return false;
+                    }
+                    else if(&getHolderAt(kingPos[0]+directionOffesets[k][0],kingPos[1]+directionOffesets[k][1])==&dst){
+                        return true;
+                    }
+                }
+            }
+        }
+        else{
+            int dstPos[] = {0,0};
+            for(int i =0;i<8;i++){
+                for(int j = 0; j <8;j++){//Find the king's current position
+                    if(&getHolderAt(i,j)==&dst){
+                        dstPos[0]=i;
+                        dstPos[1]=j;
+                        break;
+                    }
+                }
+            }   
+
+            for(int m=0;m<possMovesToBlock.size();m++){
+                if(&dst == &getHolderAt(possMovesToBlock[m][0],possMovesToBlock[m][1])){
+                    if(bit.gameTag()==Bishop+color){
+                        if(abs(dstPos[0]-possMovesToBlock[m][2])==abs(dstPos[1]-possMovesToBlock[m][3])){
+                            return true;
+                        }
+                    }
+                    if(bit.gameTag()==Rook+color){
+                        if(dstPos[0]!=possMovesToBlock[m][2]&&dstPos[1]==possMovesToBlock[m][3]){
+                            return true;
+                        }
+                        else if(dstPos[0]==possMovesToBlock[m][2]&&dstPos[1]!=possMovesToBlock[m][3]){
+                            return true;
+                        }
+                    }
+                    if(bit.gameTag()==Knight+color){
+                        if(false){
+
+                        }
+                    }
+                    if(bit.gameTag()==Queen+color){
+                        if(abs(dstPos[0]-possMovesToBlock[m][2])==abs(dstPos[1]-possMovesToBlock[m][3])){
+                            return true;
+                        }
+                        else if(dstPos[0]!=possMovesToBlock[m][2]&&dstPos[1]==possMovesToBlock[m][3]){
+                            return true;
+                        }
+                        else if(dstPos[0]==possMovesToBlock[m][2]&&dstPos[1]!=possMovesToBlock[m][3]){
+                            return true;
+                        }
+                    }
+                }
+                else if(&dst == &getHolderAt(possMovesToBlock[m][2],possMovesToBlock[m][3])){
+                    
+                }
+
+            }
+        }
+        //If The king cannot move, then find a piece that can block
+        //If the king has possible moves, find the safe spot that it can move to
+        std::cout<<"DANGER"<<std::endl;
+
+        return false;
+    }
     if(src.bit()&&src.bit()->gameTag()==Pawn){
         for(int k =0 ;k <8;k++){
             if(&getHolderAt(k,3)==&dst){
@@ -201,11 +289,11 @@ bool Chess::canBitMoveFromTo(Bit& bit, BitHolder& src, BitHolder& dst)
 }
 
 void Chess::bitMovedFromTo(Bit &bit, BitHolder &src, BitHolder &dst) {
-    if(getCurrentPlayer()!=0&&lastBitBlack&&(*lastBitBlack).getPawn()&&(*lastBitBlack).getMoved()){
-        (*lastBitBlack).setPawn(false);
+    if(getCurrentPlayer()==getPlayerAt(1)&&lastBitBlack&&lastBitBlack->getPawn()&&lastBitBlack->getMoved()){
+        lastBitBlack->setPawn(false);
     }
-    else if(lastBitWhite&&(*lastBitWhite).getPawn()&&(*lastBitWhite).getMoved()){
-        (*lastBitWhite).setPawn(false);
+    else if(getCurrentPlayer()==getPlayerAt(0)&&lastBitWhite&&lastBitWhite->getPawn()&&lastBitWhite->getMoved()){
+        lastBitWhite->setPawn(false);
     }
     if(enpassant){
         for(int i = 0; i < 8;i++){
@@ -385,7 +473,7 @@ std::vector<std::array<int,4>> Chess::generateMoves(){
             edges[y][x][7] = std::min(numSouth,numWest);
         }
     }
-    //bool kingSafe = kingChecked(getPlayerAt(0)==getCurrentPlayer()?128:0);
+    //bool kingSafe = kingChecked(getPlayerAt(0)==getCurrentPlayer()?0:128);
     for (int y = 0; y < _gameOptions.rowY; y++) {
         for (int x = 0; x < _gameOptions.rowX; x++) {
             ChessSquare *piece = &_grid[y][x];//Get current piece
@@ -395,9 +483,9 @@ std::vector<std::array<int,4>> Chess::generateMoves(){
                     auto notPoss = generateKingMoves(getPlayerAt(0)==getCurrentPlayer()?1:0);
                     for(int i = 0;i<8;i++){
                         bool poss = true;
-                        if(y+directionOffesets[i][0]>=0&&y+directionOffesets[i][0]<8&&x+directionOffesets[i][1]<8&&x+directionOffesets[i][8]>=0){
+                        if(y+directionOffesets[i][0]>=0&&y+directionOffesets[i][0]<8&&x+directionOffesets[i][1]<8&&x+directionOffesets[i][1]>=0){
                             for(int j =0; j < notPoss.size();j++){
-                                if(_grid[notPoss[j][2]][notPoss[j][3]].bit()->getOwner()!=getCurrentPlayer()&&notPoss[j][0]==y+directionOffesets[i][0]&&notPoss[j][1]==x+directionOffesets[i][1]){
+                                if(notPoss[j][0]==y+directionOffesets[i][0]&&notPoss[j][1]==x+directionOffesets[i][1]){
                                     poss = false;
                                 }
                             }
@@ -454,7 +542,7 @@ std::vector<std::array<int,4>> Chess::generateMoves(){
     return moves;
 }
 
-bool Chess::kingChecked(int color){
+std::vector<std::array<int,4>> Chess::kingChecked(int color){
     int directionOffesets[8][2] = {{0,-1},{0,1},{1,0},{-1,0},{1,-1},{-1,1},{-1,-1},{1,1}};//The possible transformations
     std::vector<std::array<int,4>> moves;
     int edges[8][8][8];
@@ -478,25 +566,24 @@ bool Chess::kingChecked(int color){
     for (int y = 0; y < _gameOptions.rowY; y++) {
         for (int x = 0; x < _gameOptions.rowX; x++) {
             ChessSquare *piece = &_grid[y][x];//Get current piece
-            //std::cout<<piece->bit()<<" gridPiece: " <<_grid[y][x].bit()<<std::endl;
-            if(piece->bit()&&piece->bit()->getOwner()==getCurrentPlayer()){//If piece is owned by current player, otherwise we don't care
+            if(piece->bit()&&piece->bit()->getOwner()!=getCurrentPlayer()){
                 if(piece->bit()->gameTag()==Pawn||piece->bit()->gameTag()==Pawn+128){
                     if(piece->bit()->gameTag()==Pawn+128){
                         if(x-1>=0){
                             if(y-1>=0&&_grid[y-1][x-1].bit()&&_grid[y-1][x-1].bit()->gameTag()==King+color){
-                                return true;
+                                moves.push_back({y-1,x-1,y,x});
                             }
                             if(y+1<8&&_grid[y+1][x-1].bit()&&_grid[y+1][x-1].bit()->gameTag()==King+color){
-                                return true;
+                                moves.push_back({y+1,x-1,y,x});
                             }
                         }
                     }else{
                         if(x+1<8){
                             if(y-1>=0&&_grid[y-1][x+1].bit()&&_grid[y-1][x+1].bit()->gameTag()==King+color){
-                                return true;
+                                moves.push_back({y-1,x+1,y,x});
                             }
                             if(y+1<8&&_grid[y+1][x+1].bit()&&_grid[y+1][x+1].bit()->gameTag()==King+color){
-                                return true;
+                                moves.push_back({y+1,x+1,y,x});
                             }
                         }
                     }
@@ -505,7 +592,7 @@ bool Chess::kingChecked(int color){
                     int KnMoves[8][2] = {{-2,1},{-2,-1},{2,1},{2,-1,},{1,-2},{1,2},{-1,2},{-1,-2}};
                     for(int i = 0; i < 8;i++){
                         if(y+KnMoves[i][0]>=0&&y+KnMoves[i][0]<8&&x+KnMoves[i][1]>=0&&x+KnMoves[i][1]<8&&(_grid[y+KnMoves[i][0]][x+KnMoves[i][1]].bit()&&_grid[y+KnMoves[i][0]][x+KnMoves[i][1]].bit()->gameTag()==King+color)){
-                            return true;
+                            moves.push_back({y+KnMoves[i][0],x+KnMoves[i][1],y,x});
                         }
                     }
                 }
@@ -522,12 +609,12 @@ bool Chess::kingChecked(int color){
                         for(int n = 0; n<edges[y][x][i];n++){
                             int targetSquare[2] = {(y+(directionOffesets[i][0]*(n+1))),(x+(directionOffesets[i][1]*(n+1)))};
                             ChessSquare *pieceOnSquare = &_grid[targetSquare[0]][targetSquare[1]];
-                            //std::cout<<targetSquare[0]<<" "<<targetSquare[1]<<" Target square "<<directionOffesets[i][0]<<" "<< directionOffesets[i][1]<<" offset "<<i <<" i "<<n<<"n "<<y<<" "<<x<<" startSquares "<<edges[y][x][i]<<" edges"<<std::endl;
+                
+                            if(pieceOnSquare->bit()&&pieceOnSquare->bit()->gameTag()==King+color){
+                                moves.push_back({targetSquare[0],targetSquare[1],y,x});
+                            }
                             if(pieceOnSquare->bit()&&pieceOnSquare->bit()->getOwner()==getCurrentPlayer()){
                                 break;
-                            }
-                            if(pieceOnSquare->bit()->gameTag()==King+color){
-                                return true;
                             }
                             if(pieceOnSquare->bit()&&pieceOnSquare->bit()->getOwner()!= getCurrentPlayer()){
                                 break;
@@ -538,7 +625,7 @@ bool Chess::kingChecked(int color){
             }
         }
     }
-    return false;
+    return moves;
 }
 
 std::vector<std::array<int,4>> Chess::generateKingMoves(int playerNumber){
