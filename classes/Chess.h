@@ -44,10 +44,6 @@ public:
 	void        updateAI() override;
     bool        gameHasAI() override { return true; }
 private:
-    bool enpassant = false;
-    bool enpassantF = false;
-    Bit* lastBitWhite;
-    Bit* lastBitBlack;
     Bit *       PieceForPlayer(const int playerNumber, ChessPiece piece);
     const char  bitToPieceNotation(int row, int column) const;
 
@@ -57,6 +53,10 @@ private:
     bool isOnBoard(int x, int y) const ;
     void generateSlidingPieceMoves(int x, int y, std::vector<std::array<int, 4>>& moves, const std::vector<std::pair<int, int>>& directions);
     void generateKnightMoves(int x, int y, std::vector<std::array<int, 4>>& moves);
+    bool isSquareUnderAttack(int x, int y, Player* attackerColor);
+    std::pair<int, int> findKingPosition(Player* playerColor);
+    bool isMoveLegal(const std::array<int, 4>& move);
+    bool wouldExposeKing(int srcX, int srcY, int dstX, int dstY);
     std::vector<std::array<int,4>> kingChecked(int color);
 
     ChessSquare      _grid[8][8];

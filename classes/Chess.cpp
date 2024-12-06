@@ -221,38 +221,39 @@ void Chess::updateAI()
 }
 
 std::vector<std::array<int,4>> Chess::generateMoves(){
-    std::vector<std::array<int, 4>> moves;
+    std::vector<std::array<int, 4>> allMoves, legalMoves;
 
-    // Loop through the board to find all pieces owned by the current player
+    // Generate all possible moves
     for (int y = 0; y < 8; y++) {
         for (int x = 0; x < 8; x++) {
             ChessSquare* square = &_grid[y][x];
             Bit* piece = square->bit();
 
             if (piece && piece->getOwner() == getCurrentPlayer()) {
-                ChessPiece type = static_cast<ChessPiece>(piece->gameTag() & 127); // Treat as enum
-                // Generate moves based on piece type
+                ChessPiece type = static_cast<ChessPiece>(piece->gameTag() & 127);
+
+                // Determine piece type and add potential moves to allMoves
                 switch (type) {
                     case Pawn:
-                        generatePawnMoves(x, y, moves, piece->gameTag());
+                        generatePawnMoves(x, y, allMoves, piece->gameTag());
                         break;
                     case Knight:
-                        generateKnightMoves(x, y, moves);
+                        generateKnightMoves(x, y, allMoves);
                         break;
                     case Bishop:
-                        generateSlidingPieceMoves(x, y, moves, { {-1, -1}, {-1, 1}, {1, -1}, {1, 1} }); // Diagonal moves
+                        generateSlidingPieceMoves(x, y, allMoves, { {-1, -1}, {-1, 1}, {1, -1}, {1, 1} });
                         break;
                     case Rook:
-                        generateSlidingPieceMoves(x, y, moves, { {0, -1}, {0, 1}, {-1, 0}, {1, 0} }); // Cardinal moves
+                        generateSlidingPieceMoves(x, y, allMoves, { {0, -1}, {0, 1}, {-1, 0}, {1, 0} });
                         break;
                     case Queen:
-                        generateSlidingPieceMoves(x, y, moves, { 
-                            {0, -1}, {0, 1}, {-1, 0}, {1, 0},     // Cardinal
-                            {-1, -1}, {-1, 1}, {1, -1}, {1, 1}   // Diagonal
+                        generateSlidingPieceMoves(x, y, allMoves, { 
+                            {0, -1}, {0, 1}, {-1, 0}, {1, 0}, 
+                            {-1, -1}, {-1, 1}, {1, -1}, {1, 1} 
                         });
                         break;
                     case King:
-                        generateKingMoves(x, y, moves);
+                        generateKingMoves(x, y, allMoves);
                         break;
                     default:
                         break; // NoPiece or invalid type
@@ -260,7 +261,15 @@ std::vector<std::array<int,4>> Chess::generateMoves(){
             }
         }
     }
-    return moves;
+
+    // Validate each move for legality
+    for (const auto& move : allMoves) {
+        if (isMoveLegal(move)) {
+            legalMoves.push_back(move);
+        }
+    }
+
+    return legalMoves;
 }
 
 bool Chess::isOnBoard(int x, int y) const {
@@ -289,16 +298,17 @@ void Chess::generateSlidingPieceMoves(int x, int y, std::vector<std::array<int, 
             nx += dir.first;
             ny += dir.second;
 
-            if (!isOnBoard(nx, ny)) break;
+            if (!isOnBoard(nx, ny)) break; // Stop if out of bounds
 
-            Bit* target = _grid[ny][nx].bit();
-            if (!target) {
-                moves.push_back({ny, nx, y, x}); // Empty square
-            } else {
-                if (target->getOwner() != getCurrentPlayer()) {
-                    moves.push_back({ny, nx, y, x}); // Capture opponent
-                }
-                break; // Stop at first collision
+            ChessSquare* square = &_grid[ny][nx];
+            Bit* target = square->bit();
+
+            // Add this square to attacks
+            moves.push_back({ny, nx, y, x});
+
+            if (target) {
+                // Stop sliding if there's a piece here
+                break;
             }
         }
     }
@@ -340,4 +350,172 @@ void Chess::generatePawnMoves(int x, int y, std::vector<std::array<int, 4>>& mov
     if (isOnBoard(x + direction, y +1) && _grid[y + 1][x + direction].bit() && _grid[y + 1][x + direction].bit()->getOwner() != getCurrentPlayer()) {
         moves.push_back({y +1, x + direction, y, x});
     }
+}
+
+bool Chess::isSquareUnderAttack(int x, int y, Player* attackerColor) {
+    // Loop through all board squares to find attackers
+    for (int srcY = 0; srcY < 8; srcY++) {
+        for (int srcX = 0; srcX < 8; srcX++) {
+            ChessSquare* square = &_grid[srcY][srcX];
+            Bit* piece = square->bit();
+
+            if (piece && piece->getOwner() == attackerColor) {
+                // Generate attacks for the piece
+                std::vector<std::array<int, 4>> attacks;
+                ChessPiece type = static_cast<ChessPiece>(piece->gameTag() & 127);
+                switch (type) {
+                    case Pawn:
+                        generatePawnMoves(srcX, srcY, attacks, piece->gameTag());
+                        break;
+                    case Knight:
+                        generateKnightMoves(srcX, srcY, attacks);
+                        break;
+                    case Bishop:
+                        generateSlidingPieceMoves(srcX, srcY, attacks, { {-1, -1}, {-1, 1}, {1, -1}, {1, 1} });
+                        break;
+                    case Rook:
+                        generateSlidingPieceMoves(srcX, srcY, attacks, { {0, -1}, {0, 1}, {-1, 0}, {1, 0} });
+                        break;
+                    case Queen:
+                        generateSlidingPieceMoves(srcX, srcY, attacks, { 
+                            {0, -1}, {0, 1}, {-1, 0}, {1, 0}, 
+                            {-1, -1}, {-1, 1}, {1, -1}, {1, 1} });
+                        break;
+                    case King:
+                        generateKingMoves(srcX, srcY, attacks); // Returns single-step moves
+                        break;
+                }
+
+                // Check if the target square (x, y) is included in the attacks
+                for (const auto& attack : attacks) {
+                    if (attack[0] == y && attack[1] == x) {
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+
+    return false;
+}
+
+std::pair<int, int> Chess::findKingPosition(Player* playerColor) {
+    for (int y = 0; y < 8; y++) {
+        for (int x = 0; x < 8; x++) {
+            Bit* piece = _grid[y][x].bit();
+            if (piece && (piece->gameTag() == (King)||piece->gameTag() == (King+128))) {
+                if(piece->getOwner()==playerColor){
+                    return {x, y};
+                }
+            }
+        }
+    }
+    return {-1, -1}; // King not found (should never happen in valid chess game)
+}
+
+bool Chess::isMoveLegal(const std::array<int, 4>& move) {
+    int srcX = move[3], srcY = move[2];
+    int dstX = move[1], dstY = move[0];
+
+    // Get the piece being moved
+    Bit* piece = _grid[srcY][srcX].bit();
+    if (!piece) return false; // No piece to move
+
+    // Find the current player's king position
+    Player* playerColor = piece->getOwner();
+    auto [kingX, kingY] = findKingPosition(playerColor);
+
+    // Special case: if the king itself is moving
+    if (piece->gameTag() == King || piece->gameTag() == King + 128) {
+        kingX = dstX;
+        kingY = dstY; // Update king position for the move
+    }
+
+    // Check if the king is under attack on the original square
+    if (isSquareUnderAttack(kingX, kingY, getPlayerAt(0)==playerColor?getPlayerAt(1):getPlayerAt(0))) {
+        std::cerr << "King is already in check!" << std::endl;
+        return false;
+    }
+
+    // For other pieces, determine if moving the piece exposes the king to attack
+    if (wouldExposeKing(srcX, srcY, dstX, dstY)) {
+        return false;
+    }
+
+    return true; // The move is legal
+}
+
+bool Chess::wouldExposeKing(int srcX, int srcY, int dstX, int dstY) {
+    // Find the current player's king position
+    Player* playerColor = _grid[srcY][srcX].bit()->getOwner();
+    auto [kingX, kingY] = findKingPosition(playerColor);
+
+    if (kingX == -1 || kingY == -1) {
+        std::cerr << "Error: King not found!" << std::endl;
+        return false; // Failsafe
+    }
+
+    // Special case: if the piece being moved is the king
+    if (srcX == kingX && srcY == kingY) {
+        return false; // `isMoveLegal()` will handle king moves separately
+    }
+
+    // Check all attack lines around the king
+    const int directionOffsets[8][2] = {
+        {0, -1}, {0, 1}, {-1, 0}, {1, 0},  // Cardinal: N, S, W, E
+        {-1, -1}, {-1, 1}, {1, -1}, {1, 1} // Diagonal
+    };
+
+    for (const auto& dir : directionOffsets) {
+        int nx = kingX, ny = kingY;
+        bool foundFriendlyPiece = false;
+        int pinnedPieceX = -1, pinnedPieceY = -1; // Location of a potentially pinned piece
+
+        while (true) {
+            nx += dir[0];
+            ny += dir[1];
+
+            if (!isOnBoard(nx, ny)) break;
+
+            ChessSquare* square = &_grid[ny][nx];
+            Bit* piece = square->bit();
+
+            if (piece) {
+                if (piece->getOwner() == playerColor) {
+                    // First friendly piece encountered: could be pinned
+                    if (foundFriendlyPiece) break; // More than one friendly piece: not a pin
+                    foundFriendlyPiece = true;
+                    pinnedPieceX = nx;
+                    pinnedPieceY = ny;
+                } else {
+                    // Opposing piece: Check for pinning
+                    ChessPiece type = static_cast<ChessPiece>(piece->gameTag() & 127);
+                    bool validPinner = false;
+
+                    // Rook-like attacks on cardinals; Bishop-like on diagonals; Queen on both
+                    if ((dir[0] == 0 || dir[1] == 0) && (type == Rook || type == Queen)) {
+                        validPinner = true;
+                    }
+                    if ((dir[0] != 0 && dir[1] != 0) && (type == Bishop || type == Queen)) {
+                        validPinner = true;
+                    }
+
+                    if (!foundFriendlyPiece && validPinner) {
+                        break; // No friendly piece between king and attacker: king is directly under attack
+                    } else if (foundFriendlyPiece && validPinner) {
+                        // Friendly piece is pinned
+                        if (pinnedPieceX == srcX && pinnedPieceY == srcY) {
+                            // Moving along the line of attack is okay; any other move isn't
+                            if (dstX != nx || dstY != ny) {
+                                return true;
+                            }
+                        }
+                    }
+                    break; // Stop tracing in this direction when an attacker is found
+                }
+            }
+        }
+    }
+
+    return false; // The move does not expose the king
 }
