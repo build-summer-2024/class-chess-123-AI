@@ -47,6 +47,7 @@ private:
     Bit *       PieceForPlayer(const int playerNumber, ChessPiece piece);
     const char  bitToPieceNotation(int row, int column) const;
 
+    bool isCheckmate(Player* playerColor);
     std::vector<std::array<int,4>>       generateMoves();
     void generateKingMoves(int x, int y, std::vector<std::array<int, 4>>& moves);
     void generatePawnMoves(int x, int y, std::vector<std::array<int, 4>>& moves, int color) ;
@@ -57,6 +58,9 @@ private:
     std::pair<int, int> findKingPosition(Player* playerColor);
     bool isMoveLegal(const std::array<int, 4>& move);
     bool wouldExposeKing(int srcX, int srcY, int dstX, int dstY);
+    int evaluateBoard();
+    int negamax(int depth, int alpha, int beta);
+    std::array<int, 4> getBestMove(int depth);
     std::vector<std::array<int,4>> kingChecked(int color);
 
     ChessSquare      _grid[8][8];

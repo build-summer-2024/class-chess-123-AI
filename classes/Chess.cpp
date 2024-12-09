@@ -74,6 +74,7 @@ void Chess::FENtoBoard(std::string FEN){
 void Chess::setUpBoard()
 {
     setNumberOfPlayers(2);//Set players to 2
+    
     _gameOptions.rowX = 8;
     _gameOptions.rowY = 8;
     //char piece[2];
@@ -140,7 +141,25 @@ void Chess::stopGame()
 Player* Chess::checkForWinner()
 {
     // check to see if either player has won
+    if(isCheckmate(getPlayerAt(0))){
+        return getPlayerAt(1);
+    }
+    else if(isCheckmate(getPlayerAt(1))){
+        return getPlayerAt(0);
+    }
     return nullptr;
+}
+
+bool Chess::isCheckmate(Player* playerColor) {
+    // First, check if the king is in check
+    auto [kingX, kingY] = findKingPosition(playerColor);
+    if (!isSquareUnderAttack(kingX, kingY, (playerColor == getPlayerAt(0)) ? getPlayerAt(1) : getPlayerAt(0))) {
+        return false; // King is not in check, hence not checkmate
+    }
+
+    // If the king is in check, we generate all available moves for the player
+    std::vector<std::array<int, 4>> moves = generateMoves();
+    return moves.empty(); // If there are no moves left, it's checkmate
 }
 
 bool Chess::checkForDraw()
@@ -218,6 +237,7 @@ void Chess::setStateString(const std::string &s)
 //
 void Chess::updateAI() 
 {
+    std::array<int, 4> bestMove = getBestMove(3);
 }
 
 std::vector<std::array<int,4>> Chess::generateMoves(){
@@ -518,4 +538,83 @@ bool Chess::wouldExposeKing(int srcX, int srcY, int dstX, int dstY) {
     }
 
     return false; // The move does not expose the king
+}
+
+int Chess::evaluateBoard() {
+    int score = 0;
+    for (int y = 0; y < 8; y++) {
+        for (int x = 0; x < 8; x++) {
+            Bit* piece = _grid[y][x].bit();
+            if (piece) {
+                int value = 0;
+                // Value calculation based on piece type
+                switch (piece->gameTag() & 127) { // Masking to get type
+                    case Pawn: value = 1; break;
+                    case Knight: value = 3; break;
+                    case Bishop: value = 3; break;
+                    case Rook: value = 5; break;
+                    case Queen: value = 9; break;
+                    case King: value = 0; break; // Kings don't score in a material sense
+                }
+                // Adjust score based on ownership
+                score += (piece->getOwner() == getPlayerAt(0)) ? -value : value; // Black is maximizing
+            }
+        }
+    }
+    return score;
+}
+
+int Chess::negamax(int depth, int alpha, int beta) {
+    if (depth == 0) {
+        return evaluateBoard(); // Return the evaluation for this board state
+    }
+
+    int maxEval = -INT_MAX; // Seeking to maximize the evaluation for Black
+    std::vector<std::array<int, 4>> moves = generateMoves(); // Get all possible moves
+
+    for (const auto& move : moves) {
+        // Simulate this move
+        bitMovedFromTo(*_grid[move[2]][move[3]].bit(), _grid[move[2]][move[3]], _grid[move[0]][move[1]]);
+
+        // Get the evaluation of resulting position, negating because it's Black's turn
+        int eval = -negamax(depth - 1, -beta, -alpha);
+
+        // Undo move to restore the original state
+        bitMovedFromTo(*_grid[move[0]][move[1]].bit(), _grid[move[0]][move[1]], _grid[move[2]][move[3]]);
+
+        maxEval = std::max(maxEval, eval);
+        alpha = std::max(alpha, eval);
+
+        // Alpha-Beta Pruning
+        if (beta <= alpha) {
+            break; // Cutoff
+        }
+    }
+
+    return maxEval;
+}
+
+std::array<int, 4> Chess::getBestMove(int depth) {
+    int bestScore = -INT_MAX;
+    std::array<int, 4> bestMove = {-1, -1, -1, -1}; // Invalid default
+
+    std::vector<std::array<int, 4>> moves = generateMoves();
+    
+    for (const auto& move : moves) {
+        // Simulate this move
+        bitMovedFromTo(*_grid[move[2]][move[3]].bit(), _grid[move[2]][move[3]], _grid[move[0]][move[1]]);
+
+        // Negamax evaluation
+        int score = -negamax(depth - 1, -INT_MAX, INT_MAX);
+
+        // Undo the move
+        bitMovedFromTo(*_grid[move[0]][move[1]].bit(), _grid[move[0]][move[1]], _grid[move[2]][move[3]]);
+
+        if (score > bestScore) {
+            bestScore = score;
+            bestMove = move; // Update best move
+        }
+    }
+
+    return bestMove; // Return the best move found
 }
