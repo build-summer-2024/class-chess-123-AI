@@ -60,6 +60,7 @@ private:
     bool wouldExposeKing(int srcX, int srcY, int dstX, int dstY);
     int evaluateBoard();
     int negamax(int depth, int alpha, int beta);
+    std::pair<bool, Chess> simulateMove(const std::array<int, 4>& move);
     std::array<int, 4> getBestMove(int depth);
     std::vector<std::array<int,4>> kingChecked(int color);
 

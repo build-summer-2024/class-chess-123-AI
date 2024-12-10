@@ -86,6 +86,7 @@ void Chess::setUpBoard()
         }
     }
     FENtoBoard("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
+    setAIPlayer(1);
     startGame();
 }
 
@@ -238,6 +239,13 @@ void Chess::setStateString(const std::string &s)
 void Chess::updateAI() 
 {
     std::array<int, 4> bestMove = getBestMove(3);
+    //std::cout<<bestMove[0]<<" "<<bestMove[1]<<" "<<bestMove[2]<<bestMove[3]<<std::endl;
+    //_grid[bestMove[0]][bestMove[1]].setBit(_grid[bestMove[2]][bestMove[3]].bit());
+    //std::cout<<_grid[bestMove[0]][bestMove[1]].bit()<<" "<<bestMove[0]<<" "<<bestMove[1]<<" "<<_grid[bestMove[2]][bestMove[3]].bit()<<" "<<bestMove[2]<<" "<<bestMove[3]<<std::endl;
+    int currPieceTag = _grid[bestMove[2]][bestMove[3]].bit()->gameTag();
+    setBoardPiece(& _grid[bestMove[0]][bestMove[1]],(currPieceTag>=128?static_cast<ChessPiece>(currPieceTag-128):static_cast<ChessPiece>(currPieceTag)),currPieceTag>=128?1:0,bestMove[0],bestMove[1]);
+    _grid[bestMove[2]][bestMove[3]].destroyBit();
+    bitMovedFromTo(*_grid[bestMove[0]][bestMove[1]].bit(),_grid[bestMove[0]][bestMove[1]],_grid[bestMove[2]][bestMove[3]]);
 }
 
 std::vector<std::array<int,4>> Chess::generateMoves(){
@@ -323,13 +331,18 @@ void Chess::generateSlidingPieceMoves(int x, int y, std::vector<std::array<int, 
             ChessSquare* square = &_grid[ny][nx];
             Bit* target = square->bit();
 
+            if (target) {
+                if (target->getOwner() != getCurrentPlayer()) {
+                    // You can capture an opponent's piece
+                    moves.push_back({ny, nx, y, x});
+                }
+                // Stop sliding if there's a piece here (both ally and enemy)
+                break;
+            }
+
             // Add this square to attacks
             moves.push_back({ny, nx, y, x});
 
-            if (target) {
-                // Stop sliding if there's a piece here
-                break;
-            }
         }
     }
 }
@@ -565,6 +578,7 @@ int Chess::evaluateBoard() {
 }
 
 int Chess::negamax(int depth, int alpha, int beta) {
+    //std::cout<<"working"<<std::endl;
     if (depth == 0) {
         return evaluateBoard(); // Return the evaluation for this board state
     }
@@ -573,14 +587,12 @@ int Chess::negamax(int depth, int alpha, int beta) {
     std::vector<std::array<int, 4>> moves = generateMoves(); // Get all possible moves
 
     for (const auto& move : moves) {
-        // Simulate this move
-        bitMovedFromTo(*_grid[move[2]][move[3]].bit(), _grid[move[2]][move[3]], _grid[move[0]][move[1]]);
+        // Use simulateMove to check the legality of this move
+        auto [isLegal, boardState] = simulateMove(move);
+        if (!isLegal) continue; // Skip illegal moves
 
-        // Get the evaluation of resulting position, negating because it's Black's turn
-        int eval = -negamax(depth - 1, -beta, -alpha);
-
-        // Undo move to restore the original state
-        bitMovedFromTo(*_grid[move[0]][move[1]].bit(), _grid[move[0]][move[1]], _grid[move[2]][move[3]]);
+        // Negamax evaluation of the resulting position
+        int eval = -boardState.negamax(depth - 1, -beta, -alpha);
 
         maxEval = std::max(maxEval, eval);
         alpha = std::max(alpha, eval);
@@ -590,7 +602,6 @@ int Chess::negamax(int depth, int alpha, int beta) {
             break; // Cutoff
         }
     }
-
     return maxEval;
 }
 
@@ -601,14 +612,12 @@ std::array<int, 4> Chess::getBestMove(int depth) {
     std::vector<std::array<int, 4>> moves = generateMoves();
     
     for (const auto& move : moves) {
-        // Simulate this move
-        bitMovedFromTo(*_grid[move[2]][move[3]].bit(), _grid[move[2]][move[3]], _grid[move[0]][move[1]]);
+        // Use simulateMove to check the legality of this move
+        auto [isLegal, boardState] = simulateMove(move);
+        if (!isLegal) continue; // Skip illegal moves
 
-        // Negamax evaluation
-        int score = -negamax(depth - 1, -INT_MAX, INT_MAX);
-
-        // Undo the move
-        bitMovedFromTo(*_grid[move[0]][move[1]].bit(), _grid[move[0]][move[1]], _grid[move[2]][move[3]]);
+        // Evaluate this position
+        int score = -boardState.negamax(depth - 1, -INT_MAX, INT_MAX);
 
         if (score > bestScore) {
             bestScore = score;
@@ -617,4 +626,45 @@ std::array<int, 4> Chess::getBestMove(int depth) {
     }
 
     return bestMove; // Return the best move found
+}
+
+// Function to simulate a move
+std::pair<bool, Chess> Chess::simulateMove(const std::array<int, 4>& move) {
+    int srcX = move[3], srcY = move[2];
+    int dstX = move[1], dstY = move[0];
+
+    // Create a copy of the current board
+    Chess boardCopy;
+    for (int y = 0; y < 8; y++) {
+        for (int x = 0; x < 8; x++) {
+            boardCopy._grid[y][x] = _grid[y][x]; // Copy ChessSquare
+            
+            // If the square contains a bit (a piece), make a deep copy of it
+            if (_grid[y][x].bit()) {
+                Bit* originalBit = _grid[y][x].bit();
+                boardCopy._grid[y][x].setBit(new Bit(*originalBit)); // Assuming Bit has a proper copy constructor
+            }
+        }
+    }
+
+    // Fetch the piece and destination holder for move simulation
+    ChessSquare* src = &boardCopy._grid[srcY][srcX];
+    ChessSquare* dst = &boardCopy._grid[dstY][dstX];
+
+    Bit* movingPiece = src->bit();
+    if (!movingPiece) return {false, boardCopy}; // Invalid move
+
+    // Move the piece
+    dst->setBit(movingPiece);
+    src->setBit(nullptr);
+
+    // Checking if the king is still safe after the move
+    auto [kingX, kingY] = boardCopy.findKingPosition(movingPiece->getOwner());
+    bool inCheck = boardCopy.isSquareUnderAttack(kingX, kingY, getPlayerAt(0)==getCurrentPlayer()?getPlayerAt(1):getPlayerAt(0));
+
+    // Rollback the move
+    src->setBit(movingPiece);
+    dst->setBit(nullptr);
+
+    return {!inCheck, boardCopy}; // Return true if the king is safe and copy the board state
 }

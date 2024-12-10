@@ -36,7 +36,7 @@ public:
 	};
 
 	~Bit();
-
+	Bit(const Bit &other);
 	// helper functions
 	bool getPickedUp();
 	void setPickedUp(bool yes);

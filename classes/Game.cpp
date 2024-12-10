@@ -99,6 +99,9 @@ void Game::endTurn()
 	turn->_gameNumber = _gameOptions.gameNumber;
 	_turns.push_back(turn);
 	ClassGame::EndOfTurn();
+	if(getCurrentPlayer()->isAIPlayer()&&getPlayerAt(getAIPlayer())==getCurrentPlayer()){
+		updateAI();
+	}
 }
 
 //

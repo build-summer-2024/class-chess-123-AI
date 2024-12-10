@@ -6,6 +6,17 @@ Bit::~Bit()
 {
 }
 
+Bit::Bit(const Bit &other) {
+    this->_owner = other._owner;             
+    this->_pickedUp = other._pickedUp;
+    this->_destinationPosition = other._destinationPosition;
+    this->_destinationStep = other._destinationStep;
+    this->_moving = other._moving;
+    this->_restingZ = other._restingZ;
+    this->_restingTransform = other._restingTransform;
+
+}
+
 BitHolder *Bit::getHolder()
 {
 	// Look for my nearest ancestor that's a BitHolder:
