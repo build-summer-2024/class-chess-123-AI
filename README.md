@@ -170,4 +170,9 @@ This project is licensed under the MIT License.
 ### Castling added by adding new booleans to bits to see if they have moved yet. If the king hovers over and open rook, then spawn new piece and delete the old piece
 ### EnPassant added by adding new bit holders and booleans in chess.h. It checks which direction the enpassant is going, and if the pawn that is being eaten had just last moved and did a 2 move jump
 
+## CHESS AI
+### Helped functions added: findKingPosition(), isMoveLegal(), negaMax(), canMoveBlockAttack(), canBlockAttack(), getBestMove(), kingChecked(), and simulateMove()
+### getBestMove() calls negaMax(), and which generates all possible moves for that player with the current board state and filters through legal moves with isMoveLegal(). 
+### The move is simulated with simulateMove() and isMoveLegal() goes through all possible moves, and if the king is in check, then we search for moves that can block/protect the king with canBlockAttack() and canMoveBlockAttack(), if there are no moves then it  is checkmate.
+
 _This README is part of an educational project and is intended to serve as an example of good documentation practices._
