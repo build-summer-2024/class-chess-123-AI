@@ -334,16 +334,10 @@ void Chess::generateSlidingPieceMoves(int x, int y, std::vector<std::array<int, 
             Bit* target = square->bit();
             moves.push_back({ny, nx, y, x});
             if (target) {
-                /*if (target->getOwner() != playerColor) {
-                    // You can capture an opponent's piece
-                    moves.push_back({ny, nx, y, x});
-                }
                 // Stop sliding if there's a piece here (both ally and enemy)*/
                 break;
             }
 
-            // Add this square to attacks
-            //moves.push_back({ny, nx, y, x});
 
         }
     }
@@ -480,12 +474,11 @@ bool Chess::isMoveLegal(const std::array<int, 4>& move) {
         }
     }
 
-    // For other pieces, determine if moving the piece exposes the king to attack
     if (wouldExposeKing(srcX, srcY, dstX, dstY)) {
         return false;
     }
 
-    return true; // The move is legal
+    return true; 
 }
 
 bool Chess::wouldExposeKing(int srcX, int srcY, int dstX, int dstY) {
@@ -495,7 +488,7 @@ bool Chess::wouldExposeKing(int srcX, int srcY, int dstX, int dstY) {
 
     if (kingX == -1 || kingY == -1) {
         std::cerr << "Error: King not found!" << std::endl;
-        return false; // Failsafe
+        return false; 
     }
 
     // Special case: if the piece being moved is the king
@@ -526,7 +519,7 @@ bool Chess::wouldExposeKing(int srcX, int srcY, int dstX, int dstY) {
             if (piece) {
                 if (piece->getOwner() == playerColor) {
                     // First friendly piece encountered: could be pinned
-                    if (foundFriendlyPiece) break; // More than one friendly piece: not a pin
+                    if (foundFriendlyPiece) break;
                     foundFriendlyPiece = true;
                     pinnedPieceX = nx;
                     pinnedPieceY = ny;
@@ -554,7 +547,7 @@ bool Chess::wouldExposeKing(int srcX, int srcY, int dstX, int dstY) {
                             }
                         }
                     }
-                    break; // Stop tracing in this direction when an attacker is found
+                    break; 
                 }
             }
         }
@@ -597,7 +590,6 @@ int Chess::negamax(int depth, int alpha, int beta) {
     std::vector<std::array<int, 4>> moves = generateMoves(); // Get all possible moves
 
     for (const auto& move : moves) {
-        // Use simulateMove to check the legality of this move
         auto [isLegal, boardState] = simulateMove(move);
         if (!isLegal) continue; // Skip illegal moves
 
@@ -649,7 +641,6 @@ std::pair<bool, Chess> Chess::simulateMove(const std::array<int, 4>& move) {
         for (int x = 0; x < 8; x++) {
             boardCopy._grid[y][x] = _grid[y][x]; // Copy ChessSquare
             
-            // If the square contains a bit (a piece), make a deep copy of it
             if (_grid[y][x].bit()) {
                 Bit* originalBit = _grid[y][x].bit();
                 boardCopy._grid[y][x].setBit(new Bit(*originalBit)); // Assuming Bit has a proper copy constructor
@@ -723,10 +714,10 @@ bool Chess::canMoveBlockAttack(int kingX, int kingY, Player* playerColor) {
     return false; // No blocking moves found
 }
 bool Chess::canBlockAttack(const std::array<int, 4>& move, int kingX, int kingY) {
-    int srcX = move[3]; // Original X position of the piece being moved
-    int srcY = move[2]; // Original Y position of the piece being moved
-    int dstX = move[1]; // Target X position for the move
-    int dstY = move[0]; // Target Y position for the move
+    int srcX = move[3]; 
+    int srcY = move[2]; 
+    int dstX = move[1]; 
+    int dstY = move[0]; 
 
     // Identify the piece being moved
     Bit* movingPiece = _grid[srcY][srcX].bit();
@@ -740,20 +731,18 @@ bool Chess::canBlockAttack(const std::array<int, 4>& move, int kingX, int kingY)
     int stepY = (directionY != 0) ? (directionY > 0 ? 1 : -1) : 0; // Step in Y
 
     // Move towards the king position to check if any piece will block the attack
-    int x = dstX + stepX; // Start immediately after the destination
+    int x = dstX + stepX; 
     int y = dstY + stepY;
 
     // Capture potential attacking pieces
     while (x != kingX || y != kingY) {
         // Check if we're out of bounds
         if (!isOnBoard(x, y)) {
-            break; // Out of bounds
+            break; 
         }
 
         Bit* attacker = _grid[y][x].bit();
         if (attacker) {
-            // If there is an attacking piece, check if it can target the king
-            // Generate possible attack squares for the attacker
             std::vector<std::array<int, 4>> attackMoves;
 
             // Determine attack type of the piece
@@ -790,15 +779,14 @@ bool Chess::canBlockAttack(const std::array<int, 4>& move, int kingX, int kingY)
             // If the attack square impacts the king, the move cannot block
             for (const auto& attack : attackMoves) {
                 if (attack[0] == kingY && attack[1] == kingX) {
-                    return true; // Successful blocking move
+                    return true;
                 }
             }
-            break; // Exit if an attacker piece is hit
+            break;
         }
-        // Move to the next square in the same direction
         x += stepX;
         y += stepY;
     }
 
-    return false; // There were no valid blocking opportunities found
+    return false; 
 }
