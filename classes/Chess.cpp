@@ -86,7 +86,7 @@ void Chess::setUpBoard()
         }
     }
     FENtoBoard("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
-    //setAIPlayer(1);
+    setAIPlayer(1);
     startGame();
 }
 
@@ -143,9 +143,11 @@ Player* Chess::checkForWinner()
 {
     // check to see if either player has won
     if(isCheckmate(getPlayerAt(0))){
+        endTurn();
         return getPlayerAt(1);
     }
     else if(isCheckmate(getPlayerAt(1))){
+        endTurn();
         return getPlayerAt(0);
     }
     return nullptr;
