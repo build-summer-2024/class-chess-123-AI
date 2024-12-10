@@ -86,7 +86,7 @@ void Chess::setUpBoard()
         }
     }
     FENtoBoard("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
-    setAIPlayer(1);
+    //setAIPlayer(1);
     startGame();
 }
 
@@ -266,22 +266,22 @@ std::vector<std::array<int,4>> Chess::generateMoves(){
                         generatePawnMoves(x, y, allMoves, piece->gameTag());
                         break;
                     case Knight:
-                        generateKnightMoves(x, y, allMoves);
+                        generateKnightMoves(x, y, allMoves,getCurrentPlayer());
                         break;
                     case Bishop:
-                        generateSlidingPieceMoves(x, y, allMoves, { {-1, -1}, {-1, 1}, {1, -1}, {1, 1} });
+                        generateSlidingPieceMoves(x, y, allMoves, { {-1, -1}, {-1, 1}, {1, -1}, {1, 1} },getCurrentPlayer());
                         break;
                     case Rook:
-                        generateSlidingPieceMoves(x, y, allMoves, { {0, -1}, {0, 1}, {-1, 0}, {1, 0} });
+                        generateSlidingPieceMoves(x, y, allMoves, { {0, -1}, {0, 1}, {-1, 0}, {1, 0} },getCurrentPlayer());
                         break;
                     case Queen:
                         generateSlidingPieceMoves(x, y, allMoves, { 
                             {0, -1}, {0, 1}, {-1, 0}, {1, 0}, 
                             {-1, -1}, {-1, 1}, {1, -1}, {1, 1} 
-                        });
+                        },getCurrentPlayer());
                         break;
                     case King:
-                        generateKingMoves(x, y, allMoves);
+                        generateKingMoves(x, y, allMoves,getCurrentPlayer());
                         break;
                     default:
                         break; // NoPiece or invalid type
@@ -304,7 +304,7 @@ bool Chess::isOnBoard(int x, int y) const {
     return x >= 0 && x < 8 && y >= 0 && y < 8;
 }
 
-void Chess::generateKingMoves(int x, int y, std::vector<std::array<int, 4>>& moves) {
+void Chess::generateKingMoves(int x, int y, std::vector<std::array<int, 4>>& moves,Player* playerColor) {
     const int kingOffsets[8][2] = {
         {0, -1}, {0, 1}, {-1, 0}, {1, 0},    // Cardinal
         {-1, -1}, {-1, 1}, {1, -1}, {1, 1}  // Diagonal
@@ -312,13 +312,13 @@ void Chess::generateKingMoves(int x, int y, std::vector<std::array<int, 4>>& mov
 
     for (const auto& offset : kingOffsets) {
         int nx = x + offset[0], ny = y + offset[1];
-        if (isOnBoard(nx, ny) && (!_grid[ny][nx].bit() || _grid[ny][nx].bit()->getOwner() != getCurrentPlayer())) {
+        if (isOnBoard(nx, ny) && (!_grid[ny][nx].bit() || _grid[ny][nx].bit()->getOwner() != playerColor)) {
             moves.push_back({ny, nx, y, x});
         }
     }
 }
 
-void Chess::generateSlidingPieceMoves(int x, int y, std::vector<std::array<int, 4>>& moves, const std::vector<std::pair<int, int>>& directions) {
+void Chess::generateSlidingPieceMoves(int x, int y, std::vector<std::array<int, 4>>& moves, const std::vector<std::pair<int, int>>& directions,Player* playerColor) {
     for (const auto& dir : directions) {
         int nx = x, ny = y;
 
@@ -330,24 +330,24 @@ void Chess::generateSlidingPieceMoves(int x, int y, std::vector<std::array<int, 
 
             ChessSquare* square = &_grid[ny][nx];
             Bit* target = square->bit();
-
+            moves.push_back({ny, nx, y, x});
             if (target) {
-                if (target->getOwner() != getCurrentPlayer()) {
+                /*if (target->getOwner() != playerColor) {
                     // You can capture an opponent's piece
                     moves.push_back({ny, nx, y, x});
                 }
-                // Stop sliding if there's a piece here (both ally and enemy)
+                // Stop sliding if there's a piece here (both ally and enemy)*/
                 break;
             }
 
             // Add this square to attacks
-            moves.push_back({ny, nx, y, x});
+            //moves.push_back({ny, nx, y, x});
 
         }
     }
 }
 
-void Chess::generateKnightMoves(int x, int y, std::vector<std::array<int, 4>>& moves) {
+void Chess::generateKnightMoves(int x, int y, std::vector<std::array<int, 4>>& moves,Player* playerColor) {
     const int knightOffsets[8][2] = {
         {-2, 1}, {-1, 2}, {1, 2}, {2, 1},
         {2, -1}, {1, -2}, {-1, -2}, {-2, -1}
@@ -355,7 +355,7 @@ void Chess::generateKnightMoves(int x, int y, std::vector<std::array<int, 4>>& m
 
     for (const auto& offset : knightOffsets) {
         int nx = x + offset[0], ny = y + offset[1];
-        if (isOnBoard(nx, ny) && (!_grid[ny][nx].bit() || _grid[ny][nx].bit()->getOwner() != getCurrentPlayer())) {
+        if (isOnBoard(nx, ny) && (!_grid[ny][nx].bit() || _grid[ny][nx].bit()->getOwner() != playerColor)) {
             moves.push_back({ny, nx, y, x});
         }
     }
@@ -401,21 +401,21 @@ bool Chess::isSquareUnderAttack(int x, int y, Player* attackerColor) {
                         generatePawnMoves(srcX, srcY, attacks, piece->gameTag());
                         break;
                     case Knight:
-                        generateKnightMoves(srcX, srcY, attacks);
+                        generateKnightMoves(srcX, srcY, attacks,attackerColor);
                         break;
                     case Bishop:
-                        generateSlidingPieceMoves(srcX, srcY, attacks, { {-1, -1}, {-1, 1}, {1, -1}, {1, 1} });
+                        generateSlidingPieceMoves(srcX, srcY, attacks, { {-1, -1}, {-1, 1}, {1, -1}, {1, 1} },attackerColor);
                         break;
                     case Rook:
-                        generateSlidingPieceMoves(srcX, srcY, attacks, { {0, -1}, {0, 1}, {-1, 0}, {1, 0} });
+                        generateSlidingPieceMoves(srcX, srcY, attacks, { {0, -1}, {0, 1}, {-1, 0}, {1, 0} },attackerColor);
                         break;
                     case Queen:
                         generateSlidingPieceMoves(srcX, srcY, attacks, { 
                             {0, -1}, {0, 1}, {-1, 0}, {1, 0}, 
-                            {-1, -1}, {-1, 1}, {1, -1}, {1, 1} });
+                            {-1, -1}, {-1, 1}, {1, -1}, {1, 1} },attackerColor);
                         break;
                     case King:
-                        generateKingMoves(srcX, srcY, attacks); // Returns single-step moves
+                        generateKingMoves(srcX, srcY, attacks,attackerColor); // Returns single-step moves
                         break;
                 }
 
@@ -458,16 +458,24 @@ bool Chess::isMoveLegal(const std::array<int, 4>& move) {
     Player* playerColor = piece->getOwner();
     auto [kingX, kingY] = findKingPosition(playerColor);
 
+    if(_grid[dstY][dstX].bit()&&_grid[dstY][dstX].bit()->getOwner()==playerColor){
+        return false;
+    }
+
     // Special case: if the king itself is moving
     if (piece->gameTag() == King || piece->gameTag() == King + 128) {
         kingX = dstX;
         kingY = dstY; // Update king position for the move
+        if (isSquareUnderAttack(kingX, kingY, getPlayerAt(0)==playerColor?getPlayerAt(1):getPlayerAt(0))) {
+            return false;
+        }
     }
-
     // Check if the king is under attack on the original square
     if (isSquareUnderAttack(kingX, kingY, getPlayerAt(0)==playerColor?getPlayerAt(1):getPlayerAt(0))) {
         std::cerr << "King is already in check!" << std::endl;
-        return false;
+        if (!canMoveBlockAttack(kingX, kingY, playerColor)) {
+            return false; // No blocking moves available
+        }
     }
 
     // For other pieces, determine if moving the piece exposes the king to attack
@@ -667,4 +675,128 @@ std::pair<bool, Chess> Chess::simulateMove(const std::array<int, 4>& move) {
     dst->setBit(nullptr);
 
     return {!inCheck, boardCopy}; // Return true if the king is safe and copy the board state
+}
+
+bool Chess::canMoveBlockAttack(int kingX, int kingY, Player* playerColor) {
+    for (int y = 0; y < 8; y++) {
+        for (int x = 0; x < 8; x++) {
+            ChessSquare* square = &_grid[y][x];
+            Bit* piece = square->bit();
+            if (piece && piece->getOwner() == playerColor) {
+                std::vector<std::array<int, 4>> moves;
+                ChessPiece type = static_cast<ChessPiece>(piece->gameTag() & 127);
+                
+                // Generate moves based on piece type
+                switch (type) {
+                    case Rook:
+                        generateSlidingPieceMoves(x, y, moves, { {0, -1}, {0, 1}, {-1, 0}, {1, 0} },playerColor);
+                        break;
+                    case Bishop:
+                        generateSlidingPieceMoves(x, y, moves, { {-1, -1}, {-1, 1}, {1, -1}, {1, 1} },playerColor);
+                        break;
+                    case Queen:
+                        generateSlidingPieceMoves(x, y, moves, { 
+                            {0, -1}, {0, 1}, {-1, 0}, {1, 0}, 
+                            {-1, -1}, {-1, 1}, {1, -1}, {1, 1}
+                        },playerColor);
+                        break;
+                    case Knight:
+                        generateKnightMoves(x, y, moves,playerColor);
+                        break;
+                    case Pawn:
+                        generatePawnMoves(x,y,moves,piece->gameTag());
+                        break;
+                }
+
+                // Check if any move from this piece can block the attack on the king
+                for (const auto& move : moves) {
+                    if (canBlockAttack(move, kingX, kingY)) {
+                        std::cout<<"blockable"<<std::endl;
+                        return true; 
+                    }
+                }
+            }
+        }
+    }
+    return false; // No blocking moves found
+}
+bool Chess::canBlockAttack(const std::array<int, 4>& move, int kingX, int kingY) {
+    int srcX = move[3]; // Original X position of the piece being moved
+    int srcY = move[2]; // Original Y position of the piece being moved
+    int dstX = move[1]; // Target X position for the move
+    int dstY = move[0]; // Target Y position for the move
+
+    // Identify the piece being moved
+    Bit* movingPiece = _grid[srcY][srcX].bit();
+
+    // Check the direction of the move
+    int directionX = dstX - srcX;
+    int directionY = dstY - srcY;
+
+    // Normalize the step for moving toward the king
+    int stepX = (directionX != 0) ? (directionX > 0 ? 1 : -1) : 0; // Step in X
+    int stepY = (directionY != 0) ? (directionY > 0 ? 1 : -1) : 0; // Step in Y
+
+    // Move towards the king position to check if any piece will block the attack
+    int x = dstX + stepX; // Start immediately after the destination
+    int y = dstY + stepY;
+
+    // Capture potential attacking pieces
+    while (x != kingX || y != kingY) {
+        // Check if we're out of bounds
+        if (!isOnBoard(x, y)) {
+            break; // Out of bounds
+        }
+
+        Bit* attacker = _grid[y][x].bit();
+        if (attacker) {
+            // If there is an attacking piece, check if it can target the king
+            // Generate possible attack squares for the attacker
+            std::vector<std::array<int, 4>> attackMoves;
+
+            // Determine attack type of the piece
+            ChessPiece type = static_cast<ChessPiece>(attacker->gameTag() & 127);
+            switch (type) {
+                case Pawn:
+                    // Add diagonal attack squares for the opponent's pawn
+                    attackMoves.push_back({y + (attacker->getOwner() == getPlayerAt(0) ? -1 : 1), x - 1, 0, 0});
+                    attackMoves.push_back({y + (attacker->getOwner() == getPlayerAt(0) ? -1 : 1), x + 1, 0, 0});
+                    break;
+                case Knight:
+                    generateKnightMoves(x, y, attackMoves,attacker->getOwner());
+                    break;
+                case Bishop:
+                    generateSlidingPieceMoves(x, y, attackMoves, { {-1, -1}, {-1, 1}, {1, -1}, {1, 1} },attacker->getOwner());
+                    break;
+                case Rook:
+                    generateSlidingPieceMoves(x, y, attackMoves, { {0, -1}, {0, 1}, {-1, 0}, {1, 0} },attacker->getOwner());
+                    break;
+                case Queen:
+                    generateSlidingPieceMoves(x, y, attackMoves, {
+                        {0, -1}, {0, 1}, {-1, 0}, {1, 0},
+                        {-1, -1}, {-1, 1}, {1, -1}, {1, 1}
+                    },attacker->getOwner());
+                    break;
+                case King:
+                    // Generate king's potential moves (though kings shouldn't block)
+                    generateKingMoves(x, y, attackMoves,attacker->getOwner());
+                    break;
+                default:
+                    break;
+            }
+
+            // If the attack square impacts the king, the move cannot block
+            for (const auto& attack : attackMoves) {
+                if (attack[0] == kingY && attack[1] == kingX) {
+                    return true; // Successful blocking move
+                }
+            }
+            break; // Exit if an attacker piece is hit
+        }
+        // Move to the next square in the same direction
+        x += stepX;
+        y += stepY;
+    }
+
+    return false; // There were no valid blocking opportunities found
 }

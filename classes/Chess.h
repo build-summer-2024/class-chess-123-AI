@@ -49,17 +49,19 @@ private:
 
     bool isCheckmate(Player* playerColor);
     std::vector<std::array<int,4>>       generateMoves();
-    void generateKingMoves(int x, int y, std::vector<std::array<int, 4>>& moves);
+    void generateKingMoves(int x, int y, std::vector<std::array<int, 4>>& moves,Player* playerColor);
     void generatePawnMoves(int x, int y, std::vector<std::array<int, 4>>& moves, int color) ;
     bool isOnBoard(int x, int y) const ;
-    void generateSlidingPieceMoves(int x, int y, std::vector<std::array<int, 4>>& moves, const std::vector<std::pair<int, int>>& directions);
-    void generateKnightMoves(int x, int y, std::vector<std::array<int, 4>>& moves);
+    void generateSlidingPieceMoves(int x, int y, std::vector<std::array<int, 4>>& moves, const std::vector<std::pair<int, int>>& directions,Player* playerColor);
+    void generateKnightMoves(int x, int y, std::vector<std::array<int, 4>>& moves,Player* playerColor);
     bool isSquareUnderAttack(int x, int y, Player* attackerColor);
     std::pair<int, int> findKingPosition(Player* playerColor);
     bool isMoveLegal(const std::array<int, 4>& move);
     bool wouldExposeKing(int srcX, int srcY, int dstX, int dstY);
     int evaluateBoard();
     int negamax(int depth, int alpha, int beta);
+    bool canMoveBlockAttack(int kingX, int kingY, Player* playerColor);
+    bool canBlockAttack(const std::array<int, 4>& move, int kingX, int kingY);
     std::pair<bool, Chess> simulateMove(const std::array<int, 4>& move);
     std::array<int, 4> getBestMove(int depth);
     std::vector<std::array<int,4>> kingChecked(int color);
